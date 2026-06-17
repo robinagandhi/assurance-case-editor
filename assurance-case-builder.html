@@ -159,12 +159,12 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
   <input id="case-name-input" type="text" value="Untitled Case" title="Case name">
   <div class="sep"></div>
   <button class="tbtn" onclick="newCase()">New</button>
-  <button class="tbtn primary" onclick="saveCase()">Save</button>
-  <button class="tbtn" onclick="promptLoad()">Load</button>
   <div class="sep"></div>
-  <button class="tbtn" onclick="exportJSON()">Export JSON</button>
-  <button class="tbtn" onclick="document.getElementById('file-input').click()">Import JSON</button>
-  <input type="file" id="file-input" accept=".json" onchange="importJSON(this)">
+  <button class="tbtn primary" onclick="saveToDisc()">Save to Disc</button>
+  <button class="tbtn" onclick="document.getElementById('file-input').click()">Open File</button>
+  <input type="file" id="file-input" accept=".json,.gsn.json" onchange="openFile(this)">
+  <div class="sep"></div>
+  <button class="tbtn" onclick="saveSVG()">Save SVG</button>
   <div class="sep"></div>
   <button class="tbtn" onclick="loadSample()">Load Sample</button>
   <button class="tbtn" onclick="toggleHelp()" style="margin-left:auto">? Help</button>
@@ -373,7 +373,7 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
       <tr><td><span class="kbd">Ctrl Z</span></td><td>Undo</td></tr>
       <tr><td><span class="kbd">Ctrl Y</span> / <span class="kbd">Ctrl ⇧ Z</span></td><td>Redo</td></tr>
       <tr><td><span class="kbd">Delete</span> / <span class="kbd">Backspace</span></td><td>Delete selected node or edge</td></tr>
-      <tr><td><span class="kbd">Ctrl S</span></td><td>Save to browser storage</td></tr>
+      <tr><td><span class="kbd">Ctrl S</span></td><td>Save to Disc (downloads file)</td></tr>
       <tr><td><span class="kbd">Escape</span></td><td>Cancel current operation / close editor</td></tr>
       <tr><td><span class="kbd">Scroll</span></td><td>Zoom in / out toward cursor</td></tr>
       <tr><td><span class="kbd">Space + drag</span></td><td>Pan canvas (alternative to dragging empty space)</td></tr>
@@ -381,12 +381,12 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
 
     <h3>Save &amp; Load</h3>
     <ul>
-      <li><strong>Save</strong> — stores the current case in your browser's local storage under the case name shown in the toolbar.</li>
-      <li><strong>Load</strong> — lists all previously saved cases and lets you pick one to restore.</li>
-      <li><strong>Export JSON</strong> — downloads the case as a <code>.gsn.json</code> file you can share or back up.</li>
-      <li><strong>Import JSON</strong> — loads a previously exported <code>.gsn.json</code> file.</li>
+      <li><strong>Save to Disc</strong> (Ctrl/⌘ S) — downloads your diagram as a <code>.gsn.json</code> file to your computer. Use this to back up or share your work.</li>
+      <li><strong>Open File</strong> — opens a previously saved <code>.gsn.json</code> file and restores your diagram.</li>
+      <li><strong>Save SVG</strong> — exports the complete diagram as a scalable vector graphic (<code>.svg</code>) suitable for reports, slides, or printing. Handles and selection are not included.</li>
       <li><strong>Load Sample</strong> — loads the <em>Tweety Can Fly</em> example from the course lecture to explore.</li>
     </ul>
+    <div class="note">Your work is also auto-saved in the browser as a crash recovery backup. This is separate from the disc file — always use <strong>Save to Disc</strong> to keep a permanent copy.</div>
 
   </div>
 </div>
@@ -636,7 +636,7 @@ function resizeHandleSVG(n){
   const hw = n.w/2, hh = n.h/2;
   return RESIZE_CORNERS.map(({corner, cx, cy}) => {
     const rx = cx * hw, ry = cy * hh;
-    return `<rect x="${rx-5}" y="${ry-5}" width="10" height="10" rx="2" fill="#0ea5e9" stroke="#fff" stroke-width="1.5" style="cursor:${corner}-resize"/>`;
+    return `<rect x="${rx-5}" y="${ry-5}" width="10" height="10" rx="2" fill="#0ea5e9" stroke="#fff" stroke-width="1.5" class="resize-handle" style="cursor:${corner}-resize"/>`;
   }).join('');
 }
 
@@ -1113,7 +1113,7 @@ function onKey(e){
     if(bd && bd.style.display==='block'){ toggleHelp(); return; }
     closeEditor(); setMode('select');
   }
-  if((e.ctrlKey||e.metaKey) && e.key==='s'){ e.preventDefault(); saveCase(); }
+  if((e.ctrlKey||e.metaKey) && e.key==='s'){ e.preventDefault(); saveToDisc(); }
   if((e.ctrlKey||e.metaKey) && e.key==='z' && !e.shiftKey){ e.preventDefault(); undo(); }
   if((e.ctrlKey||e.metaKey) && (e.key==='y' || (e.key==='z' && e.shiftKey))){ e.preventDefault(); redo(); }
 }
@@ -1238,6 +1238,11 @@ function pushHistory(){
   history.push(snapshot());
   if(history.length > 25) history.shift();
   histIdx = history.length - 1;
+  // Silent crash-recovery auto-save
+  try {
+    const data = { version:1, name:caseName(), nodes:state.nodes, edges:state.edges, camera:state.camera };
+    localStorage.setItem('gsn__autosave', JSON.stringify(data));
+  } catch(e){}
 }
 function undo(){
   if(histIdx <= 0){ toast('Nothing to undo'); return; }
@@ -1262,20 +1267,84 @@ function redo(){
 // ═══════════════════════════════════════════════
 function caseName(){ return document.getElementById('case-name-input').value.trim() || 'Untitled Case'; }
 
-function saveCase(){
+// ═══════════════════════════════════════════════
+// SAVE / OPEN FILE
+// ═══════════════════════════════════════════════
+function saveToDisc(){
   const data = { version:1, name:caseName(), nodes:state.nodes, edges:state.edges, camera:state.camera };
-  localStorage.setItem('gsn__' + caseName(), JSON.stringify(data));
-  toast('Saved: ' + caseName());
+  const blob = new Blob([JSON.stringify(data,null,2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = caseName().replace(/\s+/g,'_') + '.gsn.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Saved: ' + a.download);
 }
 
-function promptLoad(){
-  const keys = Object.keys(localStorage).filter(k=>k.startsWith('gsn__')).map(k=>k.slice(5));
-  if(!keys.length){ toast('No saved cases found'); return; }
-  const name = prompt('Saved cases:\n' + keys.join('\n') + '\n\nEnter case name to load:');
-  if(!name) return;
-  const raw = localStorage.getItem('gsn__'+name);
-  if(!raw){ toast('Case not found: '+name); return; }
-  loadData(JSON.parse(raw));
+function openFile(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      loadData(JSON.parse(e.target.result));
+      toast('Opened: ' + file.name);
+    } catch(err){ toast('Error reading file'); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ═══════════════════════════════════════════════
+// SAVE SVG
+// ═══════════════════════════════════════════════
+function saveSVG(){
+  if(!state.nodes.length){ toast('Nothing to export'); return; }
+
+  // Bounding box of all nodes
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  state.nodes.forEach(n => {
+    minX = Math.min(minX, n.x - n.w/2);
+    minY = Math.min(minY, n.y - n.h/2);
+    maxX = Math.max(maxX, n.x + n.w/2);
+    maxY = Math.max(maxY, n.y + n.h/2);
+  });
+  const pad = 48;
+  const vx = minX-pad, vy = minY-pad, vw = maxX-minX+pad*2, vh = maxY-minY+pad*2;
+
+  // Render without selection highlight
+  const savedSel = state.sel;
+  state.sel = { nodeId:null, edgeId:null };
+  const edgesStr = state.edges.map(edgeHTML).join('');
+  const nodesStr = state.nodes.map(nodeHTML).join('');
+  state.sel = savedSel;
+
+  const svgOut = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="${vw}" height="${vh}">
+  <defs>
+    <style>.conn-handle,.hitbox,.resize-handle,.ehit{display:none}</style>
+    <marker id="arr" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0,9 3.5,0 7" fill="#555"/>
+    </marker>
+    <marker id="arr-dashed" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0,9 3.5,0 7" fill="#D9BE60"/>
+    </marker>
+    <marker id="arr-dotted" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0,9 3.5,0 7" fill="#888"/>
+    </marker>
+  </defs>
+  <g>${edgesStr}</g>
+  <g>${nodesStr}</g>
+</svg>`;
+
+  const blob = new Blob([svgOut], { type:'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = caseName().replace(/\s+/g,'_') + '.svg';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('SVG saved: ' + a.download);
 }
 
 function loadData(data){
@@ -1287,33 +1356,6 @@ function loadData(data){
   recalcCounters();
   history = []; histIdx = -1; pushHistory();
   render();
-}
-
-// ═══════════════════════════════════════════════
-// EXPORT / IMPORT JSON
-// ═══════════════════════════════════════════════
-function exportJSON(){
-  const data = { version:1, name:caseName(), nodes:state.nodes, edges:state.edges, camera:state.camera };
-  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href=url; a.download=(caseName().replace(/\s+/g,'_'))+'.gsn.json'; a.click();
-  URL.revokeObjectURL(url);
-  toast('Exported');
-}
-
-function importJSON(input){
-  const file = input.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try{
-      const data = JSON.parse(e.target.result);
-      loadData(data);
-      toast('Imported: '+file.name);
-    } catch(err){ toast('Error reading file'); }
-  };
-  reader.readAsText(file);
-  input.value = '';
 }
 
 // ═══════════════════════════════════════════════
