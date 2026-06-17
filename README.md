@@ -6,6 +6,10 @@ Developed to support the *Software Assurance* course at the University of Nebras
 
 ---
 
+**Try it out here:** [Assurance Case Confidence Maps Builder](https://htmlpreview.github.io/?https://github.com/robinagandhi/assurance-case-editor/blob/main/assurance-case-builder.html)
+
+---
+
 ## Getting Started
 
 1. Open `assurance-case-builder.html` in any modern browser (Chrome, Firefox, Safari, Edge).
