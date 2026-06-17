@@ -37,6 +37,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;height:10
 .pal-btn[data-type="undermining"]{border-color:#1565C0;background:#E3F2FD;color:#0D3C75}
 .pal-btn[data-type="undercutting"]{border-color:#2E7D32;background:#E8F5E9;color:#1B5E20}
 .pal-btn[data-type="inference"]{border-color:#2ECC71;background:#F0FFF4;color:#145A32}
+.pal-btn[data-type="undeveloped"]{border-color:#1f2937;background:#1f2937;color:#fff}
+.pal-btn[data-type="complete"]{border-color:#6b7280;background:#6b7280;color:#fff}
 
 /* Tool buttons in palette */
 .pal-tool{border-color:#d1d5db;color:#374151;background:#f9fafb}
@@ -194,6 +196,11 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
       <button class="pal-btn" data-type="inference" onclick="addNode('inference')">Inference Rule</button>
     </div>
     <div class="pal-section">
+      <div class="pal-label">Branch Ends</div>
+      <button class="pal-btn" data-type="undeveloped" onclick="addNode('undeveloped')">◆ Undeveloped</button>
+      <button class="pal-btn" data-type="complete" onclick="addNode('complete')">● Complete</button>
+    </div>
+    <div class="pal-section">
       <div class="pal-label">Tools</div>
       <button class="pal-btn pal-tool pal-active" id="pal-select" onclick="setMode('select')">&#9654; Select</button>
       <button class="pal-btn pal-tool t-connect" id="pal-connect" onclick="setMode('connect')">&#8594; Connect</button>
@@ -336,10 +343,11 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
       <tr><td><span class="chip chip-inference">IR — Inference</span></td><td>Parallelogram</td><td>Makes an implicit inference rule explicit so it can be challenged. Example: "If Tweety is a bird then it can fly."</td></tr>
     </table>
 
-    <h3>Branch Indicators (automatic)</h3>
+    <h3>Branch End Markers</h3>
+    <p>Add these from the <strong>Branch Ends</strong> section in the palette, then connect them to the last node in a branch:</p>
     <ul>
-      <li><strong>◆ Black diamond</strong> below a Claim or Defeater node — the branch is <em>undeveloped</em> and needs further argument or evidence. Disappears when you connect something below it.</li>
-      <li><strong>⬤ Grey circle</strong> below an Evidence node — the branch is <em>terminated</em> with a fact.</li>
+      <li><strong>◆ Undeveloped</strong> — a small black diamond indicating the argument branch has not yet been fully developed. Use on Claims or Defeaters that still need further sub-claims or evidence.</li>
+      <li><strong>● Complete</strong> — a small grey filled circle indicating the branch is terminated and supported. Typically placed after an Evidence node.</li>
     </ul>
 
     <h3>Writing Good Claims</h3>
@@ -395,7 +403,9 @@ const TYPE = {
   rebutting:   { prefix:'R',  w:180, h:64,  fill:'#FFFDE7', stroke:'#F9A825', sw:2,   shape:'rect'   },
   undermining: { prefix:'U',  w:180, h:64,  fill:'#E3F2FD', stroke:'#1565C0', sw:2,   shape:'rect'   },
   undercutting:{ prefix:'UC', w:180, h:64,  fill:'#E8F5E9', stroke:'#2E7D32', sw:2,   shape:'rect'   },
-  inference:   { prefix:'IR', w:180, h:60,  fill:'#F0FFF4', stroke:'#2ECC71', sw:1.5, shape:'parallelogram'}
+  inference:   { prefix:'IR', w:180, h:60,  fill:'#F0FFF4', stroke:'#2ECC71', sw:1.5, shape:'parallelogram'},
+  undeveloped: { prefix:'',   w:28,  h:28,  fill:'#1f2937', stroke:'#1f2937', sw:1,   shape:'diamond'      },
+  complete:    { prefix:'',   w:26,  h:26,  fill:'#6b7280', stroke:'#fff',    sw:1.5, shape:'circle'       }
 };
 
 const DEFEATER_TYPES = new Set(['rebutting','undermining','undercutting']);
@@ -426,6 +436,7 @@ function uid(){ return '_' + Math.random().toString(36).slice(2,9); }
 
 function nextLabel(type){
   const p = TYPE[type].prefix;
+  if(!p) return '';
   state.counters[p] = (state.counters[p] || 0) + 1;
   return p + state.counters[p];
 }
@@ -493,11 +504,14 @@ function connPt(n, tx, ty){
   const t = TYPE[n.type];
 
   if(t.shape === 'circle' || t.shape === 'ellipse'){
-    // For circle hw===hh; for ellipse use angle
-    const a = Math.atan2(ndy * hw, ndx * hh); // parametric
+    const a = Math.atan2(ndy * hw, ndx * hh);
     return { x: n.x + hw * Math.cos(a), y: n.y + hh * Math.sin(a) };
   }
-  // Rectangle-like (rect, dogear, parallelogram, defeater rects)
+  if(t.shape === 'diamond'){
+    const denom = Math.abs(ndx)/hw + Math.abs(ndy)/hh;
+    const tp = denom < 1e-9 ? hw : 1/denom;
+    return { x: n.x + ndx*tp, y: n.y + ndy*tp };
+  }
   return rectPt(n.x, n.y, hw, hh, ndx, ndy);
 }
 
@@ -575,6 +589,8 @@ function shapeHTML(n, selected){
     const sk = 14;
     const pts = `${-hw+sk},${-hh} ${hw+sk},${-hh} ${hw-sk},${hh} ${-hw-sk},${hh}`;
     shape = `<polygon points="${pts}" fill="${fill}" stroke="${selStroke}" stroke-width="${selSW}"/>`;
+  } else if(t.shape === 'diamond'){
+    shape = `<polygon points="0,${-hh} ${hw},0 0,${hh} ${-hw},0" fill="${fill}" stroke="${selStroke}" stroke-width="${selSW}"/>`;
   } else {
     // plain rect
     shape = `<rect x="${-hw}" y="${-hh}" width="${n.w}" height="${n.h}" rx="3" fill="${fill}" stroke="${selStroke}" stroke-width="${selSW}"/>`;
@@ -582,23 +598,6 @@ function shapeHTML(n, selected){
   return shape;
 }
 
-// ═══════════════════════════════════════════════
-// BRANCH DECORATORS (auto)
-// ═══════════════════════════════════════════════
-function leafDecorator(n){
-  const hasChildren = state.edges.some(e => e.from === n.id);
-  if(hasChildren) return '';
-  const hh = n.h / 2;
-  const t = TYPE[n.type];
-  const bottom = (t.shape === 'circle' || t.shape === 'ellipse') ? hh : hh;
-  if(n.type === 'evidence'){
-    return `<circle cx="0" cy="${bottom+14}" r="8" fill="#6b7280" stroke="#fff" stroke-width="1.5"/>`;
-  } else if(n.type === 'claim' || DEFEATER_TYPES.has(n.type)){
-    const s = 8;
-    return `<polygon points="0,${bottom+6} ${s},${bottom+6+s} 0,${bottom+6+s*2} ${-s},${bottom+6+s}" fill="#1f2937"/>`;
-  }
-  return '';
-}
 
 // ═══════════════════════════════════════════════
 // CONNECTION HANDLES
@@ -658,30 +657,28 @@ function resizeHandleAt(px, py){
 function nodeHTML(n){
   const selected = state.sel.nodeId === n.id;
   const t = TYPE[n.type];
-  const fs = 12, lfs = 10;
-  const textPad = t.shape === 'parallelogram' ? 28 : 16;
-  const maxW = n.w - textPad * 2;
-
-  const lines = wrapText(n.text, maxW, fs);
-  const lh = fs * 1.45;
-  const totalTextH = lines.length * lh;
-  const startY = -totalTextH/2 + lh*0.7;
-
-  let textHTML = lines.map((l, i) =>
-    `<text x="0" y="${startY + i*lh}" text-anchor="middle" font-size="${fs}" fill="#1f2937" font-family="system-ui,sans-serif">${esc(l)}</text>`
-  ).join('');
-
-  // Label (top-left, small)
+  const isMarker = !t.prefix;
   const hw = n.w/2, hh = n.h/2;
-  const lx = t.shape==='circle'||t.shape==='ellipse' ? -hw*0.6 : -hw+6;
-  const ly = t.shape==='circle'||t.shape==='ellipse' ? -hh*0.6 : -hh+12;
-  const labelHTML = `<text x="${lx}" y="${ly}" font-size="${lfs}" font-weight="700" fill="${selected?'#0ea5e9':t.stroke}" font-family="system-ui,sans-serif">${esc(n.label)}</text>`;
+
+  let labelHTML = '', textHTML = '';
+  if(!isMarker){
+    const fs = 12, lfs = 10;
+    const textPad = t.shape === 'parallelogram' ? 28 : 16;
+    const lines = wrapText(n.text, n.w - textPad*2, fs);
+    const lh = fs * 1.45;
+    const startY = -(lines.length * lh)/2 + lh*0.7;
+    textHTML = lines.map((l, i) =>
+      `<text x="0" y="${startY + i*lh}" text-anchor="middle" font-size="${fs}" fill="#1f2937" font-family="system-ui,sans-serif">${esc(l)}</text>`
+    ).join('');
+    const lx = t.shape==='circle'||t.shape==='ellipse' ? -hw*0.6 : -hw+6;
+    const ly = t.shape==='circle'||t.shape==='ellipse' ? -hh*0.6 : -hh+12;
+    labelHTML = `<text x="${lx}" y="${ly}" font-size="${lfs}" font-weight="700" fill="${selected?'#0ea5e9':t.stroke}" font-family="system-ui,sans-serif">${esc(n.label)}</text>`;
+  }
 
   return `<g transform="translate(${n.x},${n.y})" data-id="${n.id}" class="gnode">
     ${shapeHTML(n, selected)}
     ${labelHTML}
     ${textHTML}
-    ${leafDecorator(n)}
     ${handleSVG(n)}
     ${resizeHandleSVG(n)}
     <rect x="${-hw-4}" y="${-hh-4}" width="${n.w+8}" height="${n.h+8}" fill="transparent" class="hitbox"/>
@@ -739,12 +736,13 @@ function updateSidebar(){
           ${Object.keys(TYPE).map(k=>`<option value="${k}"${k===n.type?' selected':''}>${k}</option>`).join('')}
         </select>
       </div>
+      ${!TYPE[n.type].prefix ? '' : `
       <div class="sb-row"><label>Label</label>
         <input class="sb-input" type="text" value="${esc(n.label)}" oninput="updateNodeProp('label',this.value)">
       </div>
       <div class="sb-row"><label>Text</label>
         <textarea class="sb-input" rows="4" oninput="updateNodeProp('text',this.value)">${esc(n.text)}</textarea>
-      </div>`;
+      </div>`}`;
   } else {
     pc.innerHTML = '<p class="sb-placeholder">Select a node to edit</p>';
   }
@@ -1157,7 +1155,7 @@ function fitView(){
 const SIDE_TYPES = new Set(['context','justification']);
 
 // Child ordering within each level: claims first, then inference/defeaters, then evidence
-const CHILD_ORDER = { claim:0, inference:1, rebutting:2, undermining:2, undercutting:2, evidence:3 };
+const CHILD_ORDER = { claim:0, inference:1, rebutting:2, undermining:2, undercutting:2, evidence:3, undeveloped:4, complete:4 };
 
 function autoLayout(){
   if(state.nodes.length === 0) return;

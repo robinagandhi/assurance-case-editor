@@ -29,12 +29,12 @@ Developed to support the *Software Assurance* course at the University of Nebras
 | **U** | Undermining Defeater | Light-blue box | *Unless…* doubt that challenges **evidence**. |
 | **UC** | Undercutting Defeater | Light-green box | *Unless…* doubt that challenges an **inference rule**. |
 
-### Branch indicators (automatic)
+### Branch end markers (manual)
 
-- **◆ Black diamond** — appears below any Claim or Defeater leaf node with no outgoing connections, marking the branch as *undeveloped*.
-- **● Grey circle** — appears below any Evidence leaf node, marking the branch as *complete*.
+Add these from the **Branch Ends** section in the palette, then connect them to the last node in a branch:
 
-Both indicators disappear automatically when you connect the node to a child.
+- **◆ Undeveloped** — small black diamond. Place after a Claim or Defeater to signal the branch still needs further argument or evidence.
+- **● Complete** — small grey filled circle. Place after an Evidence node to signal the branch is fully supported.
 
 ---
 
