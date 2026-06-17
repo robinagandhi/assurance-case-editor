@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor artifacts
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Plan files (Claude Code planning artifacts, not source)
+bubbly-swimming-panda.md
+*.plan.md

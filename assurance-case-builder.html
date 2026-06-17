@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assurance Case Confidence Maps Builder</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+
+/* ── Toolbar ── */
+#toolbar{background:#1e293b;color:#e2e8f0;padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;border-bottom:2px solid #334155}
+#toolbar h1{font-size:15px;font-weight:700;margin-right:6px;white-space:nowrap}
+#toolbar .sep{width:1px;height:22px;background:#334155;margin:0 2px}
+.tbtn{padding:5px 10px;border-radius:5px;border:1px solid #475569;background:#334155;color:#e2e8f0;font-size:12px;cursor:pointer;white-space:nowrap;transition:background .15s}
+.tbtn:hover{background:#475569}
+.tbtn.primary{background:#3b82f6;border-color:#3b82f6;color:#fff}
+.tbtn.primary:hover{background:#2563eb}
+.tbtn.active{background:#0ea5e9;border-color:#0ea5e9;color:#fff}
+#case-name-input{background:#334155;border:1px solid #475569;color:#e2e8f0;border-radius:5px;padding:4px 8px;font-size:12px;width:160px}
+#case-name-input:focus{outline:none;border-color:#3b82f6}
+
+/* ── Main layout ── */
+#main{display:flex;flex:1;overflow:hidden}
+
+/* ── Palette ── */
+#palette{width:148px;background:#fff;border-right:1px solid #d1d5db;display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.pal-section{padding:8px 8px 4px}
+.pal-label{font-size:10px;font-weight:700;text-transform:uppercase;color:#9ca3af;letter-spacing:.05em;margin-bottom:5px}
+.pal-btn{display:block;width:100%;margin-bottom:4px;padding:6px 8px;border-radius:5px;border:1.5px solid #d1d5db;background:#fff;cursor:pointer;font-size:11px;font-weight:600;text-align:left;transition:box-shadow .15s,border-color .15s;line-height:1.3}
+.pal-btn:hover{box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.pal-btn[data-type="claim"]{border-color:#374151;color:#1f2937}
+.pal-btn[data-type="evidence"]{border-color:#374151;color:#1f2937}
+.pal-btn[data-type="context"]{border-color:#D9BE60;background:#FFFDE7;color:#78600A}
+.pal-btn[data-type="justification"]{border-color:#374151;color:#1f2937}
+.pal-btn[data-type="rebutting"]{border-color:#F9A825;background:#FFFDE7;color:#7A4F00}
+.pal-btn[data-type="undermining"]{border-color:#1565C0;background:#E3F2FD;color:#0D3C75}
+.pal-btn[data-type="undercutting"]{border-color:#2E7D32;background:#E8F5E9;color:#1B5E20}
+.pal-btn[data-type="inference"]{border-color:#2ECC71;background:#F0FFF4;color:#145A32}
+
+/* Tool buttons in palette */
+.pal-tool{border-color:#d1d5db;color:#374151;background:#f9fafb}
+.pal-tool:hover{background:#f1f5f9!important;border-color:#94a3b8!important}
+.pal-tool.t-connect{border-color:#f59e0b;color:#92400e;background:#fffbeb}
+.pal-tool.t-connect:hover{background:#fef3c7!important}
+.pal-tool.t-delete{border-color:#f87171;color:#b91c1c;background:#fff5f5}
+.pal-tool.t-delete:hover{background:#fee2e2!important}
+.pal-tool.t-undo{border-color:#a5b4fc;color:#3730a3;background:#eef2ff}
+.pal-tool.t-undo:hover{background:#e0e7ff!important}
+.pal-tool.pal-active{box-shadow:0 0 0 2px currentColor;font-weight:700}
+
+/* ── Canvas ── */
+#canvas-wrap{flex:1;position:relative;overflow:hidden;background:#f8f9fa}
+#canvas{width:100%;height:100%;display:block;cursor:default}
+#canvas.mode-connect{cursor:crosshair}
+#canvas.mode-delete{cursor:not-allowed}
+
+/* dot-grid background */
+#canvas-wrap::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,#c8d0db 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0}
+
+/* ── Floating toolbar ── */
+#float-tools{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 10px;display:flex;align-items:center;gap:6px;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.ftbtn{padding:5px 11px;border-radius:5px;border:1px solid #475569;background:#334155;color:#e2e8f0;font-size:11px;cursor:pointer;white-space:nowrap;transition:background .15s}
+.ftbtn:hover{background:#475569}
+.ftbtn.active{background:#0ea5e9;border-color:#0ea5e9;color:#fff}
+.ftbtn.danger:hover{background:#ef4444;border-color:#ef4444}
+
+/* Connection handles */
+.conn-handle{fill:white;stroke:#94a3b8;stroke-width:1.5;pointer-events:none;opacity:.3;transition:opacity .15s,fill .15s,stroke .15s}
+.gnode:hover .conn-handle{opacity:1;fill:#0ea5e9;stroke:white}
+
+/* ── Sidebar ── */
+#sidebar{width:200px;background:#fff;border-left:1px solid #d1d5db;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.sb-section{padding:10px;border-bottom:1px solid #e5e7eb}
+.sb-title{font-size:10px;font-weight:700;text-transform:uppercase;color:#9ca3af;letter-spacing:.05em;margin-bottom:7px}
+.sb-row{margin-bottom:6px}
+.sb-row label{display:block;font-size:10px;color:#6b7280;margin-bottom:2px}
+.sb-input{width:100%;padding:4px 7px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;background:#f9fafb;color:#111}
+.sb-input:focus{outline:none;border-color:#3b82f6}
+select.sb-input{cursor:pointer}
+textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
+.sb-placeholder{font-size:11px;color:#9ca3af;font-style:italic;text-align:center;padding:6px 0}
+
+/* Baconian */
+.bac-fraction{font-size:22px;font-weight:700;color:#1f2937;text-align:center;letter-spacing:1px;margin-bottom:5px}
+.bac-bar-wrap{height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:8px}
+.bac-bar{height:100%;border-radius:4px;transition:width .4s,background .4s}
+.def-item{display:flex;align-items:center;gap:5px;font-size:11px;padding:2px 0;color:#374151}
+.def-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.def-dot.ok{background:#22c55e}
+.def-dot.nok{background:#ef4444}
+
+/* ── Node editor overlay ── */
+#node-editor{position:absolute;z-index:50;background:#fff;border:1.5px solid #3b82f6;border-radius:8px;padding:12px;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:none}
+#node-editor .ed-title{font-size:11px;font-weight:700;color:#6b7280;margin-bottom:8px}
+#node-editor .ed-row{margin-bottom:7px}
+#node-editor .ed-row label{display:block;font-size:10px;color:#6b7280;margin-bottom:2px}
+#node-editor input,#node-editor select,#node-editor textarea{width:100%;padding:4px 7px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;color:#111}
+#node-editor textarea{resize:vertical;min-height:60px}
+#node-editor input:focus,#node-editor select:focus,#node-editor textarea:focus{outline:none;border-color:#3b82f6}
+#node-editor .ed-btns{display:flex;gap:6px;margin-top:8px}
+#node-editor .ed-btns button{flex:1;padding:5px 0;border-radius:5px;border:none;cursor:pointer;font-size:12px;font-weight:600}
+#ed-save{background:#3b82f6;color:#fff}
+#ed-save:hover{background:#2563eb}
+#ed-cancel{background:#e5e7eb;color:#374151}
+#ed-cancel:hover{background:#d1d5db}
+
+/* ── Status bar ── */
+#statusbar{position:absolute;bottom:0;left:0;right:0;height:22px;background:rgba(30,41,59,.85);color:#94a3b8;font-size:10px;display:flex;align-items:center;padding:0 10px;gap:16px;z-index:10;pointer-events:none}
+#statusbar span b{color:#e2e8f0}
+
+/* ── File input ── */
+#file-input{display:none}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(20px);background:#1e293b;color:#e2e8f0;border:1px solid #3b82f6;border-radius:8px;padding:7px 18px;font-size:12px;opacity:0;pointer-events:none;z-index:999;transition:opacity .25s,transform .25s}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── Help modal ── */
+#help-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none}
+#help-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:201;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:min(720px,94vw);max-height:88vh;display:none;flex-direction:column;overflow:hidden}
+#help-panel.open,#help-backdrop.open{display:flex}
+#help-panel.open{display:flex}
+#help-header{background:#1e293b;color:#e2e8f0;padding:14px 20px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+#help-header h2{font-size:15px;font-weight:700;flex:1}
+#help-close{background:none;border:1px solid #475569;color:#e2e8f0;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:14px;line-height:1}
+#help-close:hover{background:#334155}
+#help-body{overflow-y:auto;padding:20px 24px;line-height:1.55;color:#1f2937;font-size:13px}
+#help-body h3{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#0ea5e9;margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb}
+#help-body h3:first-child{margin-top:0}
+#help-body p{margin-bottom:8px}
+#help-body ul{margin:0 0 8px 18px}
+#help-body li{margin-bottom:4px}
+#help-body .kbd{display:inline-block;background:#f3f4f6;border:1px solid #d1d5db;border-bottom-width:2px;border-radius:4px;padding:1px 6px;font-family:monospace;font-size:11px;color:#374151;white-space:nowrap}
+#help-body table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:12px}
+#help-body th{text-align:left;padding:5px 8px;background:#f8fafc;color:#64748b;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #e5e7eb}
+#help-body td{padding:5px 8px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+#help-body td:first-child{white-space:nowrap;font-weight:600;color:#374151;width:30%}
+#help-body .chip{display:inline-block;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;border:1px solid}
+.chip-claim{background:#fff;border-color:#374151;color:#1f2937}
+.chip-evidence{background:#fff;border-color:#374151;color:#1f2937;border-radius:99px}
+.chip-context{background:#FFFDE7;border-color:#D9BE60;color:#78600A}
+.chip-justification{background:#fff;border-color:#374151;color:#1f2937;border-radius:99px}
+.chip-rebutting{background:#FFFDE7;border-color:#F9A825;color:#7A4F00}
+.chip-undermining{background:#E3F2FD;border-color:#1565C0;color:#0D3C75}
+.chip-undercutting{background:#E8F5E9;border-color:#2E7D32;color:#1B5E20}
+.chip-inference{background:#F0FFF4;border-color:#2ECC71;color:#145A32}
+#help-body .note{background:#f0f9ff;border-left:3px solid #0ea5e9;padding:8px 12px;border-radius:0 6px 6px 0;margin-bottom:10px;font-size:12px;color:#0c4a6e}
+</style>
+</head>
+<body>
+
+<!-- Toolbar -->
+<div id="toolbar">
+  <h1>Assurance Case Confidence Maps Builder</h1>
+  <div class="sep"></div>
+  <input id="case-name-input" type="text" value="Untitled Case" title="Case name">
+  <div class="sep"></div>
+  <button class="tbtn" onclick="newCase()">New</button>
+  <button class="tbtn primary" onclick="saveCase()">Save</button>
+  <button class="tbtn" onclick="promptLoad()">Load</button>
+  <div class="sep"></div>
+  <button class="tbtn" onclick="exportJSON()">Export JSON</button>
+  <button class="tbtn" onclick="document.getElementById('file-input').click()">Import JSON</button>
+  <input type="file" id="file-input" accept=".json" onchange="importJSON(this)">
+  <div class="sep"></div>
+  <button class="tbtn" onclick="loadSample()">Load Sample</button>
+  <button class="tbtn" onclick="toggleHelp()" style="margin-left:auto">? Help</button>
+</div>
+
+<!-- Main -->
+<div id="main">
+
+  <!-- Palette -->
+  <div id="palette">
+    <div class="pal-section">
+      <div class="pal-label">Core</div>
+      <button class="pal-btn" data-type="claim" onclick="addNode('claim')">Claim / Goal</button>
+      <button class="pal-btn" data-type="evidence" onclick="addNode('evidence')">Evidence</button>
+    </div>
+    <div class="pal-section">
+      <div class="pal-label">Context</div>
+      <button class="pal-btn" data-type="context" onclick="addNode('context')">Context</button>
+      <button class="pal-btn" data-type="justification" onclick="addNode('justification')">Justification</button>
+    </div>
+    <div class="pal-section">
+      <div class="pal-label">Defeaters</div>
+      <button class="pal-btn" data-type="rebutting" onclick="addNode('rebutting')">Rebutting (R)</button>
+      <button class="pal-btn" data-type="undermining" onclick="addNode('undermining')">Undermining (U)</button>
+      <button class="pal-btn" data-type="undercutting" onclick="addNode('undercutting')">Undercutting (UC)</button>
+    </div>
+    <div class="pal-section">
+      <div class="pal-label">Other</div>
+      <button class="pal-btn" data-type="inference" onclick="addNode('inference')">Inference Rule</button>
+    </div>
+    <div class="pal-section">
+      <div class="pal-label">Tools</div>
+      <button class="pal-btn pal-tool pal-active" id="pal-select" onclick="setMode('select')">&#9654; Select</button>
+      <button class="pal-btn pal-tool t-connect" id="pal-connect" onclick="setMode('connect')">&#8594; Connect</button>
+      <button class="pal-btn pal-tool t-delete" id="pal-delete" onclick="setMode('delete')">&#10005; Delete</button>
+      <button class="pal-btn pal-tool t-undo" onclick="undo()">&#8617; Undo</button>
+      <button class="pal-btn pal-tool t-undo" onclick="redo()">&#8618; Redo</button>
+    </div>
+  </div>
+
+  <!-- Canvas -->
+  <div id="canvas-wrap">
+    <svg id="canvas" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+          <polygon points="0 0,9 3.5,0 7" fill="#555"/>
+        </marker>
+        <marker id="arr-dashed" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+          <polygon points="0 0,9 3.5,0 7" fill="#D9BE60"/>
+        </marker>
+        <marker id="arr-dotted" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+          <polygon points="0 0,9 3.5,0 7" fill="#888"/>
+        </marker>
+      </defs>
+      <g id="world">
+        <g id="edges-layer"></g>
+        <g id="nodes-layer"></g>
+        <g id="wire-layer"></g>
+      </g>
+    </svg>
+
+    <!-- Floating controls -->
+    <div id="float-tools">
+      <button class="ftbtn" onclick="undo()">&#8617; Undo</button>
+      <button class="ftbtn" onclick="redo()">&#8618; Redo</button>
+      <span style="width:1px;height:20px;background:#475569;display:inline-block"></span>
+      <button class="ftbtn" onclick="autoLayout()">Auto Layout</button>
+      <button class="ftbtn" onclick="fitView()">Fit</button>
+      <button class="ftbtn" onclick="zoom(1.2)">+</button>
+      <button class="ftbtn" onclick="zoom(.83)">−</button>
+    </div>
+
+    <!-- Status bar -->
+    <div id="statusbar">
+      <span>Nodes: <b id="st-nodes">0</b></span>
+      <span>Edges: <b id="st-edges">0</b></span>
+      <span>Zoom: <b id="st-zoom">100%</b></span>
+      <span id="st-mode">Mode: <b>Select</b></span>
+      <span style="margin-left:auto">Drag canvas to pan · Hover node → drag ○ handle to connect · Dbl-click to edit · Scroll to zoom</span>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div class="sb-section" id="props-section">
+      <div class="sb-title">Properties</div>
+      <div id="props-content"><p class="sb-placeholder">Select a node to edit</p></div>
+    </div>
+    <div class="sb-section" style="flex:1;overflow-y:auto">
+      <div class="sb-title">Baconian Confidence</div>
+      <div class="bac-fraction" id="bac-fraction">—</div>
+      <div class="bac-bar-wrap"><div class="bac-bar" id="bac-bar" style="width:0%;background:#e5e7eb"></div></div>
+      <div id="bac-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Node editor overlay -->
+<div id="node-editor">
+  <div class="ed-title">Edit Node</div>
+  <div class="ed-row">
+    <label>Type</label>
+    <select id="ed-type">
+      <option value="claim">Claim / Goal</option>
+      <option value="evidence">Evidence</option>
+      <option value="context">Context</option>
+      <option value="justification">Justification</option>
+      <option value="rebutting">Rebutting Defeater (R)</option>
+      <option value="undermining">Undermining Defeater (U)</option>
+      <option value="undercutting">Undercutting Defeater (UC)</option>
+      <option value="inference">Inference Rule (IR)</option>
+    </select>
+  </div>
+  <div class="ed-row">
+    <label>Label (e.g. C1)</label>
+    <input type="text" id="ed-label" maxlength="12">
+  </div>
+  <div class="ed-row">
+    <label>Text</label>
+    <textarea id="ed-text" rows="3"></textarea>
+  </div>
+  <div class="ed-btns">
+    <button id="ed-save" onclick="saveEditor()">Save</button>
+    <button id="ed-cancel" onclick="closeEditor()">Cancel</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Help -->
+<div id="help-backdrop" onclick="toggleHelp()"></div>
+<div id="help-panel">
+  <div id="help-header">
+    <h2>Assurance Case Confidence Maps Builder — Help</h2>
+    <button id="help-close" onclick="toggleHelp()">✕</button>
+  </div>
+  <div id="help-body">
+
+    <h3>Getting Started</h3>
+    <ul>
+      <li><strong>Double-click the canvas</strong> to add a Claim node at that position.</li>
+      <li><strong>Click a node type</strong> in the left palette to add it at the canvas center, then fill in its text.</li>
+      <li><strong>Double-click any node</strong> to edit its label and text in a popup, or edit directly in the <em>Properties</em> sidebar on the right.</li>
+    </ul>
+
+    <h3>Connecting Nodes</h3>
+    <ul>
+      <li><strong>Hover a node</strong> to reveal small ○ handles at its four edges. <strong>Drag from a handle</strong> to another node to draw an arrow.</li>
+      <li>Alternatively, activate <strong>→ Connect</strong> mode in the left panel, then <strong>click the source node</strong>, then <strong>click the target node</strong>.</li>
+      <li>To remove a connection, activate <strong>✕ Delete</strong> mode and click the arrow line.</li>
+    </ul>
+
+    <h3>Navigating the Canvas</h3>
+    <ul>
+      <li><strong>Drag empty canvas</strong> to pan in any direction.</li>
+      <li><strong>Scroll</strong> to zoom in and out (zooms toward the cursor).</li>
+      <li><strong>Fit</strong> button (bottom bar) — fits all nodes into the visible area.</li>
+      <li><strong>Auto Layout</strong> — arranges nodes as a top-down tree: Claims → Sub-claims → Defeaters → Evidence. Context and Justification nodes are placed to the right of their parent.</li>
+    </ul>
+
+    <h3>Node Types</h3>
+    <table>
+      <tr><th>Type</th><th>Shape</th><th>Purpose</th></tr>
+      <tr><td><span class="chip chip-claim">C — Claim</span></td><td>Rectangle</td><td>A proposition about a critical system property. Written as <em>noun-phrase + verb-phrase</em>. Example: "The system minimizes information disclosure."</td></tr>
+      <tr><td><span class="chip chip-evidence">E — Evidence</span></td><td>Circle</td><td>Tangible, observable support for a claim. Written as a <em>noun-phrase only</em>. Example: "Test results from penetration tools."</td></tr>
+      <tr><td><span class="chip chip-context">CT — Context</span></td><td>Dog-ear box</td><td>Scope or definition that helps interpret a claim. Example: "Supply chain process as defined in NIST SP 800-160."</td></tr>
+      <tr><td><span class="chip chip-justification">J — Justification</span></td><td>Ellipse</td><td>Rationale for why a claim was introduced. Example: "Intelligence reports of malicious code in nuclear energy software."</td></tr>
+      <tr><td><span class="chip chip-rebutting">R — Rebutting</span></td><td>Light yellow box</td><td><em>Unless…</em> doubt that challenges a <strong>claim</strong>. Example: "Unless Tweety is a penguin."</td></tr>
+      <tr><td><span class="chip chip-undermining">U — Undermining</span></td><td>Light blue box</td><td><em>Unless…</em> doubt that challenges <strong>evidence</strong>. Example: "Unless the DNA test was contaminated."</td></tr>
+      <tr><td><span class="chip chip-undercutting">UC — Undercutting</span></td><td>Light green box</td><td><em>Unless…</em> doubt that challenges an <strong>inference rule</strong>. Example: "Unless Tweety is a juvenile bird."</td></tr>
+      <tr><td><span class="chip chip-inference">IR — Inference</span></td><td>Parallelogram</td><td>Makes an implicit inference rule explicit so it can be challenged. Example: "If Tweety is a bird then it can fly."</td></tr>
+    </table>
+
+    <h3>Branch Indicators (automatic)</h3>
+    <ul>
+      <li><strong>◆ Black diamond</strong> below a Claim or Defeater node — the branch is <em>undeveloped</em> and needs further argument or evidence. Disappears when you connect something below it.</li>
+      <li><strong>⬤ Grey circle</strong> below an Evidence node — the branch is <em>terminated</em> with a fact.</li>
+    </ul>
+
+    <h3>Writing Good Claims</h3>
+    <div class="note">Claims must be about <strong>critical properties</strong>, not methods or actions. They must be falsifiable (true or false upon investigation).</div>
+    <table>
+      <tr><th>Good ✓</th><th>Bad ✗</th></tr>
+      <tr><td>"The login page has no exploitable SQL injection weakness"</td><td>"Perform SQL injection testing on the login page" (action, not a claim)</td></tr>
+      <tr><td>"The system minimizes information disclosure during communication"</td><td>"The system uses AES encryption" (trivially observable, no argument needed)</td></tr>
+      <tr><td>"Canvas attack surface is acceptably minimized"</td><td>"XSS results for Canvas" (no verb phrase)</td></tr>
+    </table>
+
+    <h3>Baconian Confidence</h3>
+    <p>Displayed in the right sidebar as <strong>addressed | total</strong> (e.g., <code>2|3</code>).</p>
+    <ul>
+      <li>Every Rebutting, Undermining, and Undercutting defeater counts as one <em>doubt</em>.</li>
+      <li>A doubt is <em>addressed</em> when the defeater node has at least one outgoing connection (a sub-claim or evidence responding to it).</li>
+      <li><span style="color:#22c55e;font-weight:700">Green</span> ≥ 80% · <span style="color:#f59e0b;font-weight:700">Orange</span> 40–79% · <span style="color:#ef4444;font-weight:700">Red</span> &lt; 40%</li>
+    </ul>
+
+    <h3>Keyboard Shortcuts</h3>
+    <table>
+      <tr><th>Key</th><th>Action</th></tr>
+      <tr><td><span class="kbd">Ctrl Z</span></td><td>Undo</td></tr>
+      <tr><td><span class="kbd">Ctrl Y</span> / <span class="kbd">Ctrl ⇧ Z</span></td><td>Redo</td></tr>
+      <tr><td><span class="kbd">Delete</span> / <span class="kbd">Backspace</span></td><td>Delete selected node or edge</td></tr>
+      <tr><td><span class="kbd">Ctrl S</span></td><td>Save to browser storage</td></tr>
+      <tr><td><span class="kbd">Escape</span></td><td>Cancel current operation / close editor</td></tr>
+      <tr><td><span class="kbd">Scroll</span></td><td>Zoom in / out toward cursor</td></tr>
+      <tr><td><span class="kbd">Space + drag</span></td><td>Pan canvas (alternative to dragging empty space)</td></tr>
+    </table>
+
+    <h3>Save &amp; Load</h3>
+    <ul>
+      <li><strong>Save</strong> — stores the current case in your browser's local storage under the case name shown in the toolbar.</li>
+      <li><strong>Load</strong> — lists all previously saved cases and lets you pick one to restore.</li>
+      <li><strong>Export JSON</strong> — downloads the case as a <code>.gsn.json</code> file you can share or back up.</li>
+      <li><strong>Import JSON</strong> — loads a previously exported <code>.gsn.json</code> file.</li>
+      <li><strong>Load Sample</strong> — loads the <em>Tweety Can Fly</em> example from the course lecture to explore.</li>
+    </ul>
+
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════
+const TYPE = {
+  claim:       { prefix:'C',  w:180, h:64,  fill:'#ffffff', stroke:'#374151', sw:2,   shape:'rect'   },
+  evidence:    { prefix:'E',  w:80,  h:80,  fill:'#ffffff', stroke:'#374151', sw:2,   shape:'circle' },
+  context:     { prefix:'CT', w:180, h:60,  fill:'#FFFDE7', stroke:'#D9BE60', sw:2,   shape:'dogear' },
+  justification:{ prefix:'J', w:180, h:54,  fill:'#ffffff', stroke:'#374151', sw:1.5, shape:'ellipse'},
+  rebutting:   { prefix:'R',  w:180, h:64,  fill:'#FFFDE7', stroke:'#F9A825', sw:2,   shape:'rect'   },
+  undermining: { prefix:'U',  w:180, h:64,  fill:'#E3F2FD', stroke:'#1565C0', sw:2,   shape:'rect'   },
+  undercutting:{ prefix:'UC', w:180, h:64,  fill:'#E8F5E9', stroke:'#2E7D32', sw:2,   shape:'rect'   },
+  inference:   { prefix:'IR', w:180, h:60,  fill:'#F0FFF4', stroke:'#2ECC71', sw:1.5, shape:'parallelogram'}
+};
+
+const DEFEATER_TYPES = new Set(['rebutting','undermining','undercutting']);
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let state = {
+  nodes: [],
+  edges: [],
+  camera: { x: 60, y: 60, zoom: 1 },
+  mode: 'select',
+  sel: { nodeId: null, edgeId: null },
+  drag: { on: false, id: null, sx: 0, sy: 0, nx: 0, ny: 0 },
+  conn: { on: false, from: null, mx: 0, my: 0 },
+  pan:    { on: false, sx: 0, sy: 0, cx: 0, cy: 0 },
+  resize: { on: false },
+  spaceDown: false,
+  counters: {}
+};
+
+let history = [], histIdx = -1;
+
+// ═══════════════════════════════════════════════
+// ID / LABEL HELPERS
+// ═══════════════════════════════════════════════
+function uid(){ return '_' + Math.random().toString(36).slice(2,9); }
+
+function nextLabel(type){
+  const p = TYPE[type].prefix;
+  state.counters[p] = (state.counters[p] || 0) + 1;
+  return p + state.counters[p];
+}
+
+function recalcCounters(){
+  state.counters = {};
+  state.nodes.forEach(n => {
+    const m = n.label.match(/^([A-Z]+)(\d+)$/);
+    if(m){ const v = parseInt(m[2]); state.counters[m[1]] = Math.max(state.counters[m[1]]||0, v); }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// COORDINATE CONVERSION
+// ═══════════════════════════════════════════════
+const cvs = document.getElementById('canvas');
+const world = document.getElementById('world');
+
+function s2c(sx, sy){
+  const r = cvs.getBoundingClientRect();
+  return {
+    x: (sx - r.left - state.camera.x) / state.camera.zoom,
+    y: (sy - r.top  - state.camera.y) / state.camera.zoom
+  };
+}
+function c2s(cx, cy){
+  const r = cvs.getBoundingClientRect();
+  return {
+    x: cx * state.camera.zoom + state.camera.x + r.left,
+    y: cy * state.camera.zoom + state.camera.y + r.top
+  };
+}
+
+// ═══════════════════════════════════════════════
+// NODE LOOKUPS
+// ═══════════════════════════════════════════════
+function nodeById(id){ return state.nodes.find(n => n.id === id); }
+function edgeById(id){ return state.edges.find(e => e.id === id); }
+function nodeAt(cx, cy){
+  // iterate in reverse so top-rendered nodes are hit first
+  for(let i = state.nodes.length-1; i >= 0; i--){
+    const n = state.nodes[i];
+    if(hitTest(n, cx, cy)) return n;
+  }
+  return null;
+}
+
+function hitTest(n, cx, cy){
+  const t = TYPE[n.type];
+  const dx = cx - n.x, dy = cy - n.y;
+  const hw = n.w/2, hh = n.h/2;
+  if(t.shape === 'circle') return dx*dx/(hw*hw) + dy*dy/(hh*hh) <= 1;
+  if(t.shape === 'ellipse') return dx*dx/(hw*hw) + dy*dy/(hh*hh) <= 1;
+  return Math.abs(dx) <= hw && Math.abs(dy) <= hh;
+}
+
+// ═══════════════════════════════════════════════
+// CONNECTION POINTS
+// ═══════════════════════════════════════════════
+function connPt(n, tx, ty){
+  const dx = tx - n.x, dy = ty - n.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const ndx = dx/len, ndy = dy/len;
+  const hw = n.w/2, hh = n.h/2;
+  const t = TYPE[n.type];
+
+  if(t.shape === 'circle' || t.shape === 'ellipse'){
+    // For circle hw===hh; for ellipse use angle
+    const a = Math.atan2(ndy * hw, ndx * hh); // parametric
+    return { x: n.x + hw * Math.cos(a), y: n.y + hh * Math.sin(a) };
+  }
+  // Rectangle-like (rect, dogear, parallelogram, defeater rects)
+  return rectPt(n.x, n.y, hw, hh, ndx, ndy);
+}
+
+function rectPt(cx, cy, hw, hh, ndx, ndy){
+  // Find which face the ray hits
+  if(Math.abs(ndx) < 1e-9){
+    return { x: cx, y: cy + Math.sign(ndy)*hh };
+  }
+  if(Math.abs(ndy) < 1e-9){
+    return { x: cx + Math.sign(ndx)*hw, y: cy };
+  }
+  const tx = hw / Math.abs(ndx);
+  const ty = hh / Math.abs(ndy);
+  if(tx < ty){
+    return { x: cx + Math.sign(ndx)*hw, y: cy + ndy*tx };
+  } else {
+    return { x: cx + ndx*ty, y: cy + Math.sign(ndy)*hh };
+  }
+}
+
+// ═══════════════════════════════════════════════
+// EDGE STYLE
+// ═══════════════════════════════════════════════
+function edgeStyle(e){
+  const to = nodeById(e.to);
+  if(!to) return { dash:'', marker:'arr', color:'#555' };
+  if(to.type === 'context')      return { dash:'8,4',  marker:'arr-dashed', color:'#D9BE60' };
+  if(to.type === 'justification')return { dash:'3,5',  marker:'arr-dotted', color:'#888' };
+  return { dash:'', marker:'arr', color:'#555' };
+}
+
+// ═══════════════════════════════════════════════
+// TEXT WRAP
+// ═══════════════════════════════════════════════
+function wrapText(text, maxW, fs){
+  if(!text) return [''];
+  const approxCW = fs * 0.58;
+  const maxCh = Math.max(1, Math.floor(maxW / approxCW));
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines = [];
+  let cur = '';
+  words.forEach(w => {
+    const test = cur ? cur+' '+w : w;
+    if(test.length > maxCh && cur){ lines.push(cur); cur = w; }
+    else cur = test;
+  });
+  if(cur) lines.push(cur);
+  return lines.length ? lines : [''];
+}
+
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ═══════════════════════════════════════════════
+// SHAPE SVG
+// ═══════════════════════════════════════════════
+function shapeHTML(n, selected){
+  const t = TYPE[n.type];
+  const hw = n.w/2, hh = n.h/2;
+  const selStroke = selected ? '#0ea5e9' : t.stroke;
+  const selSW = selected ? 2.5 : t.sw;
+  const fill = t.fill;
+
+  let shape = '';
+  if(t.shape === 'circle'){
+    shape = `<ellipse rx="${hw}" ry="${hh}" fill="${fill}" stroke="${selStroke}" stroke-width="${selSW}"/>`;
+  } else if(t.shape === 'ellipse'){
+    shape = `<ellipse rx="${hw}" ry="${hh}" fill="${fill}" stroke="${selStroke}" stroke-width="${selSW}"/>`;
+  } else if(t.shape === 'dogear'){
+    const ear = 12;
+    // Main body with clipped corner, then fold triangle
+    const pts = `${-hw},${-hh} ${hw-ear},${-hh} ${hw},${-hh+ear} ${hw},${hh} ${-hw},${hh}`;
+    shape = `<polygon points="${pts}" fill="${fill}" stroke="${selStroke}" stroke-width="${selSW}" stroke-dasharray="${selected?'none':'6,3'}"/>` +
+            `<polyline points="${hw-ear},${-hh} ${hw-ear},${-hh+ear} ${hw},${-hh+ear}" fill="none" stroke="${selStroke}" stroke-width="${selSW}" stroke-dasharray="${selected?'none':'6,3'}"/>`;
+  } else if(t.shape === 'parallelogram'){
+    const sk = 14;
+    const pts = `${-hw+sk},${-hh} ${hw+sk},${-hh} ${hw-sk},${hh} ${-hw-sk},${hh}`;
+    shape = `<polygon points="${pts}" fill="${fill}" stroke="${selStroke}" stroke-width="${selSW}"/>`;
+  } else {
+    // plain rect
+    shape = `<rect x="${-hw}" y="${-hh}" width="${n.w}" height="${n.h}" rx="3" fill="${fill}" stroke="${selStroke}" stroke-width="${selSW}"/>`;
+  }
+  return shape;
+}
+
+// ═══════════════════════════════════════════════
+// BRANCH DECORATORS (auto)
+// ═══════════════════════════════════════════════
+function leafDecorator(n){
+  const hasChildren = state.edges.some(e => e.from === n.id);
+  if(hasChildren) return '';
+  const hh = n.h / 2;
+  const t = TYPE[n.type];
+  const bottom = (t.shape === 'circle' || t.shape === 'ellipse') ? hh : hh;
+  if(n.type === 'evidence'){
+    return `<circle cx="0" cy="${bottom+14}" r="8" fill="#6b7280" stroke="#fff" stroke-width="1.5"/>`;
+  } else if(n.type === 'claim' || DEFEATER_TYPES.has(n.type)){
+    const s = 8;
+    return `<polygon points="0,${bottom+6} ${s},${bottom+6+s} 0,${bottom+6+s*2} ${-s},${bottom+6+s}" fill="#1f2937"/>`;
+  }
+  return '';
+}
+
+// ═══════════════════════════════════════════════
+// CONNECTION HANDLES
+// ═══════════════════════════════════════════════
+function getHandlePositions(n){
+  const hw = n.w/2, hh = n.h/2;
+  return [{x:0,y:-hh},{x:hw,y:0},{x:0,y:hh},{x:-hw,y:0}];
+}
+
+function handleSVG(n){
+  return getHandlePositions(n).map(h =>
+    `<circle cx="${h.x}" cy="${h.y}" r="5.5" class="conn-handle"/>`
+  ).join('');
+}
+
+function handleAt(cx, cy){
+  for(let i = state.nodes.length-1; i >= 0; i--){
+    const n = state.nodes[i];
+    for(const h of getHandlePositions(n)){
+      if(Math.hypot(cx-(n.x+h.x), cy-(n.y+h.y)) <= 9) return n;
+    }
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════
+// RESIZE HANDLES
+// ═══════════════════════════════════════════════
+const RESIZE_CORNERS = [
+  { corner:'nw', cx:-1, cy:-1 }, { corner:'ne', cx:1, cy:-1 },
+  { corner:'sw', cx:-1, cy: 1 }, { corner:'se', cx:1, cy: 1 },
+];
+
+function resizeHandleSVG(n){
+  if(state.sel.nodeId !== n.id) return '';
+  const hw = n.w/2, hh = n.h/2;
+  return RESIZE_CORNERS.map(({corner, cx, cy}) => {
+    const rx = cx * hw, ry = cy * hh;
+    return `<rect x="${rx-5}" y="${ry-5}" width="10" height="10" rx="2" fill="#0ea5e9" stroke="#fff" stroke-width="1.5" style="cursor:${corner}-resize"/>`;
+  }).join('');
+}
+
+function resizeHandleAt(px, py){
+  const n = nodeById(state.sel.nodeId);
+  if(!n) return null;
+  const hw = n.w/2, hh = n.h/2;
+  for(const {corner, cx, cy} of RESIZE_CORNERS){
+    const rx = n.x + cx*hw, ry = n.y + cy*hh;
+    if(Math.hypot(px - rx, py - ry) <= 9) return { node:n, corner };
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════
+// NODE RENDER
+// ═══════════════════════════════════════════════
+function nodeHTML(n){
+  const selected = state.sel.nodeId === n.id;
+  const t = TYPE[n.type];
+  const fs = 12, lfs = 10;
+  const textPad = t.shape === 'parallelogram' ? 28 : 16;
+  const maxW = n.w - textPad * 2;
+
+  const lines = wrapText(n.text, maxW, fs);
+  const lh = fs * 1.45;
+  const totalTextH = lines.length * lh;
+  const startY = -totalTextH/2 + lh*0.7;
+
+  let textHTML = lines.map((l, i) =>
+    `<text x="0" y="${startY + i*lh}" text-anchor="middle" font-size="${fs}" fill="#1f2937" font-family="system-ui,sans-serif">${esc(l)}</text>`
+  ).join('');
+
+  // Label (top-left, small)
+  const hw = n.w/2, hh = n.h/2;
+  const lx = t.shape==='circle'||t.shape==='ellipse' ? -hw*0.6 : -hw+6;
+  const ly = t.shape==='circle'||t.shape==='ellipse' ? -hh*0.6 : -hh+12;
+  const labelHTML = `<text x="${lx}" y="${ly}" font-size="${lfs}" font-weight="700" fill="${selected?'#0ea5e9':t.stroke}" font-family="system-ui,sans-serif">${esc(n.label)}</text>`;
+
+  return `<g transform="translate(${n.x},${n.y})" data-id="${n.id}" class="gnode">
+    ${shapeHTML(n, selected)}
+    ${labelHTML}
+    ${textHTML}
+    ${leafDecorator(n)}
+    ${handleSVG(n)}
+    ${resizeHandleSVG(n)}
+    <rect x="${-hw-4}" y="${-hh-4}" width="${n.w+8}" height="${n.h+8}" fill="transparent" class="hitbox"/>
+  </g>`;
+}
+
+// ═══════════════════════════════════════════════
+// EDGE RENDER
+// ═══════════════════════════════════════════════
+function edgeHTML(e){
+  const from = nodeById(e.from), to = nodeById(e.to);
+  if(!from || !to) return '';
+  const p1 = connPt(from, to.x, to.y);
+  const p2 = connPt(to, from.x, from.y);
+  const { dash, marker, color } = edgeStyle(e);
+  const sel = state.sel.edgeId === e.id;
+  const sw = sel ? 2.5 : 1.8;
+  const col = sel ? '#0ea5e9' : color;
+  // Gentle cubic bezier
+  const dy = (p2.y - p1.y) * 0.45;
+  const d = `M${p1.x},${p1.y} C${p1.x},${p1.y+dy} ${p2.x},${p2.y-dy} ${p2.x},${p2.y}`;
+  return `<g data-eid="${e.id}">
+    <path d="${d}" fill="none" stroke="transparent" stroke-width="10" class="ehit" style="cursor:pointer"/>
+    <path d="${d}" fill="none" stroke="${col}" stroke-width="${sw}" ${dash?`stroke-dasharray="${dash}"`:''}
+          marker-end="url(#${sel?'arr':marker})"/>
+  </g>`;
+}
+
+// ═══════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════
+function renderCanvas(){
+  world.setAttribute('transform',
+    `translate(${state.camera.x},${state.camera.y}) scale(${state.camera.zoom})`);
+  document.getElementById('edges-layer').innerHTML = state.edges.map(edgeHTML).join('');
+  document.getElementById('nodes-layer').innerHTML = state.nodes.map(nodeHTML).join('');
+  updateStatus();
+}
+
+function render(){
+  renderCanvas();
+  updateSidebar();
+}
+
+// ═══════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════
+function updateSidebar(){
+  const n = nodeById(state.sel.nodeId);
+  const pc = document.getElementById('props-content');
+  if(n){
+    pc.innerHTML = `
+      <div class="sb-row"><label>Type</label>
+        <select class="sb-input" onchange="updateNodeType(this.value)">
+          ${Object.keys(TYPE).map(k=>`<option value="${k}"${k===n.type?' selected':''}>${k}</option>`).join('')}
+        </select>
+      </div>
+      <div class="sb-row"><label>Label</label>
+        <input class="sb-input" type="text" value="${esc(n.label)}" oninput="updateNodeProp('label',this.value)">
+      </div>
+      <div class="sb-row"><label>Text</label>
+        <textarea class="sb-input" rows="4" oninput="updateNodeProp('text',this.value)">${esc(n.text)}</textarea>
+      </div>`;
+  } else {
+    pc.innerHTML = '<p class="sb-placeholder">Select a node to edit</p>';
+  }
+  updateBaconian();
+}
+
+function updateNodeProp(prop, val){
+  const n = nodeById(state.sel.nodeId);
+  if(!n) return;
+  n[prop] = val;
+  renderCanvas(); // don't rebuild sidebar — would destroy focus mid-typing
+}
+
+function updateNodeType(val){
+  const n = nodeById(state.sel.nodeId);
+  if(!n) return;
+  n.type = val;
+  n.w = TYPE[val].w; n.h = TYPE[val].h;
+  render();
+}
+
+function updateBaconian(){
+  const defeaters = state.nodes.filter(n => DEFEATER_TYPES.has(n.type));
+  const total = defeaters.length;
+  const addressed = defeaters.filter(n => state.edges.some(e => e.from === n.id)).length;
+  const frac = document.getElementById('bac-fraction');
+  const bar = document.getElementById('bac-bar');
+  const list = document.getElementById('bac-list');
+
+  if(total === 0){
+    frac.textContent = '—';
+    bar.style.width = '0%'; bar.style.background = '#e5e7eb';
+    list.innerHTML = '<p class="sb-placeholder" style="font-size:10px">No defeaters added yet</p>';
+    return;
+  }
+  frac.textContent = `${addressed}|${total}`;
+  const pct = addressed/total*100;
+  bar.style.width = pct+'%';
+  bar.style.background = pct>=80 ? '#22c55e' : pct>=40 ? '#f59e0b' : '#ef4444';
+  list.innerHTML = defeaters.map(n => {
+    const ok = state.edges.some(e => e.from === n.id);
+    return `<div class="def-item"><div class="def-dot ${ok?'ok':'nok'}"></div><span>${esc(n.label)}: ${esc(n.text.slice(0,30))||'(no text)'}${n.text.length>30?'…':''}</span></div>`;
+  }).join('');
+}
+
+function updateStatus(){
+  document.getElementById('st-nodes').textContent = state.nodes.length;
+  document.getElementById('st-edges').textContent = state.edges.length;
+  document.getElementById('st-zoom').textContent = Math.round(state.camera.zoom*100)+'%';
+}
+
+// ═══════════════════════════════════════════════
+// MODE
+// ═══════════════════════════════════════════════
+function setMode(m){
+  state.mode = m;
+  state.conn.on = false;
+  document.getElementById('wire-layer').innerHTML = '';
+  // Palette tool buttons
+  ['select','connect','delete'].forEach(id => {
+    const el = document.getElementById('pal-'+id);
+    if(el) el.classList.toggle('pal-active', id===m);
+  });
+  cvs.className = m==='delete'?'mode-delete': m==='connect'?'mode-connect':'';
+  document.getElementById('st-mode').innerHTML = `Mode: <b>${m.charAt(0).toUpperCase()+m.slice(1)}</b>`;
+}
+
+// ═══════════════════════════════════════════════
+// ADD NODE
+// ═══════════════════════════════════════════════
+function addNode(type, cx, cy){
+  if(cx === undefined){
+    const r = cvs.getBoundingClientRect();
+    const c = s2c(r.left + r.width/2, r.top + r.height/2);
+    cx = c.x + (Math.random()-0.5)*60;
+    cy = c.y + (Math.random()-0.5)*60;
+  }
+  const t = TYPE[type];
+  const n = { id: uid(), type, label: nextLabel(type), text: '', x: cx, y: cy, w: t.w, h: t.h };
+  state.nodes.push(n);
+  state.sel = { nodeId: n.id, edgeId: null };
+  pushHistory();
+  render();
+  openEditor(n);
+}
+
+// ═══════════════════════════════════════════════
+// DELETE
+// ═══════════════════════════════════════════════
+function deleteNode(id){
+  state.nodes = state.nodes.filter(n => n.id !== id);
+  state.edges = state.edges.filter(e => e.from !== id && e.to !== id);
+  if(state.sel.nodeId === id) state.sel.nodeId = null;
+  pushHistory(); render();
+}
+
+function deleteEdge(id){
+  state.edges = state.edges.filter(e => e.id !== id);
+  if(state.sel.edgeId === id) state.sel.edgeId = null;
+  pushHistory(); render();
+}
+
+// ═══════════════════════════════════════════════
+// EDITOR OVERLAY
+// ═══════════════════════════════════════════════
+let editingNodeId = null;
+
+function openEditor(n){
+  editingNodeId = n.id;
+  const ed = document.getElementById('node-editor');
+  document.getElementById('ed-type').value = n.type;
+  document.getElementById('ed-label').value = n.label;
+  document.getElementById('ed-text').value = n.text;
+  // Position near node
+  const sp = c2s(n.x, n.y);
+  const wrap = document.getElementById('canvas-wrap');
+  const wr = wrap.getBoundingClientRect();
+  let left = sp.x - wr.left - 110;
+  let top  = sp.y - wr.top + n.h/2*state.camera.zoom + 12;
+  left = Math.max(4, Math.min(left, wr.width-240));
+  top  = Math.max(4, Math.min(top,  wr.height-280));
+  ed.style.left = left+'px';
+  ed.style.top  = top+'px';
+  ed.style.display = 'block';
+  document.getElementById('ed-text').focus();
+}
+
+function closeEditor(){
+  document.getElementById('node-editor').style.display = 'none';
+  editingNodeId = null;
+}
+
+function saveEditor(){
+  const n = nodeById(editingNodeId);
+  if(!n){ closeEditor(); return; }
+  const newType = document.getElementById('ed-type').value;
+  n.label = document.getElementById('ed-label').value.trim() || n.label;
+  n.text  = document.getElementById('ed-text').value;
+  if(newType !== n.type){
+    n.type = newType;
+    n.w = TYPE[newType].w; n.h = TYPE[newType].h;
+  }
+  closeEditor();
+  pushHistory(); render();
+}
+
+// ═══════════════════════════════════════════════
+// EDGE HIT DETECTION (approximate via bbox near midpoint)
+// ═══════════════════════════════════════════════
+function edgeAt(cx, cy){
+  for(const e of state.edges){
+    const from = nodeById(e.from), to = nodeById(e.to);
+    if(!from||!to) continue;
+    const p1 = connPt(from, to.x, to.y);
+    const p2 = connPt(to, from.x, from.y);
+    // Sample a few points on the bezier and check distance
+    const dy = (p2.y-p1.y)*0.45;
+    for(let t=0;t<=1;t+=0.1){
+      const mt = 1-t;
+      const bx = mt*mt*mt*p1.x + 3*mt*mt*t*(p1.x) + 3*mt*t*t*(p2.x) + t*t*t*p2.x;
+      const by = mt*mt*mt*p1.y + 3*mt*mt*t*(p1.y+dy) + 3*mt*t*t*(p2.y-dy) + t*t*t*p2.y;
+      if(Math.hypot(bx-cx, by-cy) < 8) return e;
+    }
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════
+// MOUSE EVENTS
+// ═══════════════════════════════════════════════
+cvs.addEventListener('mousedown', onDown);
+cvs.addEventListener('mousemove', onMove);
+window.addEventListener('mouseup', onUp);
+cvs.addEventListener('dblclick', onDbl);
+cvs.addEventListener('wheel', onWheel, { passive: false });
+window.addEventListener('keydown', onKey);
+window.addEventListener('keyup', e => { if(e.code==='Space') state.spaceDown=false; });
+
+function getTarget(e){
+  let el = e.target;
+  while(el && el !== cvs){
+    if(el.dataset && el.dataset.id) return { type:'node', id:el.dataset.id };
+    if(el.dataset && el.dataset.eid) return { type:'edge', id:el.dataset.eid };
+    el = el.parentElement;
+  }
+  return { type:'canvas' };
+}
+
+function onDown(e){
+  if(e.button === 1 || (e.button === 0 && state.spaceDown)){
+    e.preventDefault();
+    state.pan = { on:true, sx:e.clientX, sy:e.clientY, cx:state.camera.x, cy:state.camera.y };
+    return;
+  }
+  if(e.button !== 0) return;
+  const pt = s2c(e.clientX, e.clientY);
+
+  if(state.mode === 'delete'){
+    const hit = nodeAt(pt.x, pt.y);
+    if(hit){ deleteNode(hit.id); }
+    else {
+      const he = edgeAt(pt.x, pt.y);
+      if(he) deleteEdge(he.id);
+    }
+    return;
+  }
+
+  // Check resize handles (corners of selected node, select mode only)
+  if(state.mode === 'select'){
+    const rh = resizeHandleAt(pt.x, pt.y);
+    if(rh){
+      const n = rh.node;
+      const hw = n.w/2, hh = n.h/2;
+      const corner = rh.corner;
+      // anchor = opposite corner in canvas space
+      const ax = n.x + (corner.includes('w') ?  hw : -hw);
+      const ay = n.y + (corner.includes('n') ?  hh : -hh);
+      state.resize = { on:true, id:n.id, corner, ax, ay };
+      return;
+    }
+  }
+
+  // Check connection handles (always available outside delete mode)
+  const handleHit = handleAt(pt.x, pt.y);
+  if(handleHit){
+    state.conn = { on:true, from:handleHit.id, mx:pt.x, my:pt.y };
+    return;
+  }
+
+  const hit = nodeAt(pt.x, pt.y);
+
+  // Click-to-click connect mode
+  if(state.mode === 'connect'){
+    if(hit){
+      if(!state.conn.on){
+        state.conn = { on:true, from:hit.id, mx:pt.x, my:pt.y };
+      } else {
+        if(hit.id !== state.conn.from && !state.edges.some(e=>e.from===state.conn.from&&e.to===hit.id)){
+          state.edges.push({ id:uid(), from:state.conn.from, to:hit.id });
+          pushHistory();
+        }
+        state.conn.on = false;
+        document.getElementById('wire-layer').innerHTML = '';
+        render();
+      }
+    }
+    return;
+  }
+
+  if(hit){
+    state.sel = { nodeId:hit.id, edgeId:null };
+    state.drag = { on:true, id:hit.id, sx:pt.x, sy:pt.y, nx:hit.x, ny:hit.y };
+  } else {
+    const he = edgeAt(pt.x, pt.y);
+    if(he){
+      state.sel = { nodeId:null, edgeId:he.id };
+    } else {
+      // Drag on empty canvas → pan. Short release without moving → deselect.
+      state.pan = { on:true, sx:e.clientX, sy:e.clientY, cx:state.camera.x, cy:state.camera.y, click:true };
+    }
+  }
+  render();
+}
+
+function onMove(e){
+  if(state.resize.on){
+    const pt = s2c(e.clientX, e.clientY);
+    const n = nodeById(state.resize.id);
+    if(n){
+      const { ax, ay } = state.resize;
+      const dx = pt.x - ax, dy = pt.y - ay;
+      const minW = n.type==='evidence' ? 40 : 80, minH = n.type==='evidence' ? 40 : 30;
+      let newW = Math.max(minW, Math.abs(dx));
+      let newH = Math.max(minH, Math.abs(dy));
+      if(n.type==='evidence') newH = newW;
+      n.w = newW; n.h = newH;
+      n.x = ax + Math.sign(dx || 1) * newW/2;
+      n.y = ay + Math.sign(dy || 1) * newH/2;
+      renderCanvas();
+    }
+    return;
+  }
+  if(state.pan.on){
+    state.camera.x = state.pan.cx + e.clientX - state.pan.sx;
+    state.camera.y = state.pan.cy + e.clientY - state.pan.sy;
+    render(); return;
+  }
+  if(state.drag.on){
+    const pt = s2c(e.clientX, e.clientY);
+    const n = nodeById(state.drag.id);
+    if(n){
+      n.x = state.drag.nx + pt.x - state.drag.sx;
+      n.y = state.drag.ny + pt.y - state.drag.sy;
+      render();
+    }
+    return;
+  }
+  if(state.conn.on){
+    const pt = s2c(e.clientX, e.clientY);
+    state.conn.mx = pt.x; state.conn.my = pt.y;
+    const from = nodeById(state.conn.from);
+    if(from){
+      const p = connPt(from, pt.x, pt.y);
+      document.getElementById('wire-layer').innerHTML =
+        `<line x1="${p.x}" y1="${p.y}" x2="${pt.x}" y2="${pt.y}" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr)"/>`;
+    }
+  }
+}
+
+function onUp(e){
+  if(state.pan.on){
+    const moved = Math.hypot(e.clientX - state.pan.sx, e.clientY - state.pan.sy) >= 4;
+    state.pan.on = false;
+    if(state.pan.click && !moved){
+      // Short click on empty canvas → deselect
+      state.sel = { nodeId:null, edgeId:null };
+      closeEditor();
+      render();
+    }
+    return;
+  }
+  if(state.resize.on){ state.resize.on = false; pushHistory(); render(); return; }
+  if(state.drag.on){ state.drag.on = false; pushHistory(); return; }
+  if(state.conn.on){
+    const pt = s2c(e.clientX, e.clientY);
+    const hit = nodeAt(pt.x, pt.y);
+    if(hit && hit.id !== state.conn.from && !state.edges.some(ex=>ex.from===state.conn.from&&ex.to===hit.id)){
+      state.edges.push({ id:uid(), from:state.conn.from, to:hit.id });
+      pushHistory();
+    }
+    state.conn.on = false;
+    document.getElementById('wire-layer').innerHTML = '';
+    render();
+  }
+}
+
+function onDbl(e){
+  if(e.button !== 0) return;
+  const pt = s2c(e.clientX, e.clientY);
+  const hit = nodeAt(pt.x, pt.y);
+  if(hit){ openEditor(hit); return; }
+  // Double-click on empty canvas → add claim
+  addNode('claim', pt.x, pt.y);
+}
+
+function onWheel(e){
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 0.91;
+  const newZ = Math.max(0.1, Math.min(4, state.camera.zoom * factor));
+  const r = cvs.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  state.camera.x = mx - (mx - state.camera.x) * (newZ / state.camera.zoom);
+  state.camera.y = my - (my - state.camera.y) * (newZ / state.camera.zoom);
+  state.camera.zoom = newZ;
+  render();
+}
+
+function onKey(e){
+  if(e.code==='Space' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){
+    e.preventDefault(); state.spaceDown = true;
+  }
+  if((e.key==='Delete'||e.key==='Backspace') && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){
+    if(state.sel.nodeId) deleteNode(state.sel.nodeId);
+    else if(state.sel.edgeId) deleteEdge(state.sel.edgeId);
+  }
+  if(e.key==='Escape'){
+    const bd = document.getElementById('help-backdrop');
+    if(bd && bd.style.display==='block'){ toggleHelp(); return; }
+    closeEditor(); setMode('select');
+  }
+  if((e.ctrlKey||e.metaKey) && e.key==='s'){ e.preventDefault(); saveCase(); }
+  if((e.ctrlKey||e.metaKey) && e.key==='z' && !e.shiftKey){ e.preventDefault(); undo(); }
+  if((e.ctrlKey||e.metaKey) && (e.key==='y' || (e.key==='z' && e.shiftKey))){ e.preventDefault(); redo(); }
+}
+
+// ═══════════════════════════════════════════════
+// ZOOM / FIT
+// ═══════════════════════════════════════════════
+function zoom(factor){
+  const r = cvs.getBoundingClientRect();
+  const mx = r.width/2, my = r.height/2;
+  const newZ = Math.max(0.1, Math.min(4, state.camera.zoom * factor));
+  state.camera.x = mx - (mx - state.camera.x) * (newZ / state.camera.zoom);
+  state.camera.y = my - (my - state.camera.y) * (newZ / state.camera.zoom);
+  state.camera.zoom = newZ;
+  render();
+}
+
+function fitView(){
+  if(state.nodes.length === 0) return;
+  const xs = state.nodes.map(n=>n.x), ys = state.nodes.map(n=>n.y);
+  const ws = state.nodes.map(n=>n.w/2), hs = state.nodes.map(n=>n.h/2);
+  const minX = Math.min(...xs.map((x,i)=>x-ws[i]));
+  const maxX = Math.max(...xs.map((x,i)=>x+ws[i]));
+  const minY = Math.min(...ys.map((y,i)=>y-hs[i]));
+  const maxY = Math.max(...ys.map((y,i)=>y+hs[i]));
+  const r = cvs.getBoundingClientRect();
+  const pad = 60;
+  const z = Math.min((r.width-pad*2)/(maxX-minX||1), (r.height-pad*2)/(maxY-minY||1), 2);
+  state.camera.zoom = z;
+  state.camera.x = r.width/2 - ((minX+maxX)/2)*z;
+  state.camera.y = r.height/2 - ((minY+maxY)/2)*z;
+  render();
+}
+
+// ═══════════════════════════════════════════════
+// AUTO LAYOUT
+// ═══════════════════════════════════════════════
+// Side nodes float beside their parent; everything else is in the tree.
+const SIDE_TYPES = new Set(['context','justification']);
+
+// Child ordering within each level: claims first, then inference/defeaters, then evidence
+const CHILD_ORDER = { claim:0, inference:1, rebutting:2, undermining:2, undercutting:2, evidence:3 };
+
+function autoLayout(){
+  if(state.nodes.length === 0) return;
+
+  // Build sorted tree children (exclude side nodes)
+  const childrenOf = {};
+  state.nodes.forEach(n => { childrenOf[n.id] = []; });
+  state.edges.forEach(e => {
+    const t = nodeById(e.to);
+    if(t && !SIDE_TYPES.has(t.type)) childrenOf[e.from].push(e.to);
+  });
+  state.nodes.forEach(n => {
+    childrenOf[n.id].sort((a, b) =>
+      (CHILD_ORDER[nodeById(a)?.type] ?? 9) - (CHILD_ORDER[nodeById(b)?.type] ?? 9)
+    );
+  });
+
+  // Find tree roots (no incoming tree edges)
+  const inDeg = {};
+  state.nodes.forEach(n => { inDeg[n.id] = 0; });
+  state.edges.forEach(e => {
+    const t = nodeById(e.to);
+    if(t && !SIDE_TYPES.has(t.type)) inDeg[e.to] = (inDeg[e.to]||0) + 1;
+  });
+  const mainNodes = state.nodes.filter(n => !SIDE_TYPES.has(n.type));
+  let roots = mainNodes.filter(n => !inDeg[n.id]);
+  if(!roots.length && mainNodes.length) roots = [mainNodes[0]];
+
+  // Fixed row height so all nodes at the same depth share the same Y baseline
+  const GAP_X = 44, ROW_H = 90, GAP_Y = 100;
+  let cursor = 0;
+  const pos = {};
+  const placed = new Set();
+
+  function place(id, depth){
+    if(placed.has(id)) return;
+    placed.add(id);
+    const n = nodeById(id); if(!n) return;
+    const kids = childrenOf[id].filter(k => !placed.has(k) && nodeById(k));
+
+    if(!kids.length){
+      pos[id] = { x: cursor + n.w/2, y: depth * (ROW_H + GAP_Y) };
+      cursor += n.w + GAP_X;
+      return;
+    }
+    const startX = cursor;
+    kids.forEach(k => place(k, depth + 1));
+    const endX = cursor - GAP_X;
+    pos[id] = { x: (startX + endX) / 2, y: depth * (ROW_H + GAP_Y) };
+  }
+
+  let treeX = 0;
+  roots.forEach(r => { cursor = treeX; place(r.id, 0); treeX = cursor + 100; });
+
+  // Apply tree positions
+  state.nodes.forEach(n => { if(pos[n.id]){ n.x = pos[n.id].x; n.y = pos[n.id].y; } });
+
+  // Place side nodes (context / justification) to the right of their parent
+  const sideOff = {};
+  state.edges.forEach(e => {
+    const t = nodeById(e.to), f = nodeById(e.from);
+    if(!t || !f || !SIDE_TYPES.has(t.type) || !pos[f.id]) return;
+    t.x = pos[f.id].x + f.w/2 + 20 + t.w/2 + (sideOff[f.id]||0);
+    t.y = pos[f.id].y;
+    sideOff[f.id] = (sideOff[f.id]||0) + t.w + 12;
+  });
+
+  render();
+  toast('Layout applied');
+}
+
+// ═══════════════════════════════════════════════
+// HISTORY (UNDO)
+// ═══════════════════════════════════════════════
+function snapshot(){
+  return JSON.stringify({ nodes: state.nodes, edges: state.edges });
+}
+function pushHistory(){
+  history = history.slice(0, histIdx+1);
+  history.push(snapshot());
+  if(history.length > 25) history.shift();
+  histIdx = history.length - 1;
+}
+function undo(){
+  if(histIdx <= 0){ toast('Nothing to undo'); return; }
+  histIdx--;
+  const s = JSON.parse(history[histIdx]);
+  state.nodes = s.nodes; state.edges = s.edges;
+  state.sel = { nodeId:null, edgeId:null };
+  recalcCounters(); render(); toast('Undone');
+}
+
+function redo(){
+  if(histIdx >= history.length - 1){ toast('Nothing to redo'); return; }
+  histIdx++;
+  const s = JSON.parse(history[histIdx]);
+  state.nodes = s.nodes; state.edges = s.edges;
+  state.sel = { nodeId:null, edgeId:null };
+  recalcCounters(); render(); toast('Redone');
+}
+
+// ═══════════════════════════════════════════════
+// SAVE / LOAD (localStorage)
+// ═══════════════════════════════════════════════
+function caseName(){ return document.getElementById('case-name-input').value.trim() || 'Untitled Case'; }
+
+function saveCase(){
+  const data = { version:1, name:caseName(), nodes:state.nodes, edges:state.edges, camera:state.camera };
+  localStorage.setItem('gsn__' + caseName(), JSON.stringify(data));
+  toast('Saved: ' + caseName());
+}
+
+function promptLoad(){
+  const keys = Object.keys(localStorage).filter(k=>k.startsWith('gsn__')).map(k=>k.slice(5));
+  if(!keys.length){ toast('No saved cases found'); return; }
+  const name = prompt('Saved cases:\n' + keys.join('\n') + '\n\nEnter case name to load:');
+  if(!name) return;
+  const raw = localStorage.getItem('gsn__'+name);
+  if(!raw){ toast('Case not found: '+name); return; }
+  loadData(JSON.parse(raw));
+}
+
+function loadData(data){
+  state.nodes = data.nodes || [];
+  state.edges = data.edges || [];
+  state.camera = data.camera || { x:60, y:60, zoom:1 };
+  state.sel = { nodeId:null, edgeId:null };
+  document.getElementById('case-name-input').value = data.name || 'Untitled';
+  recalcCounters();
+  history = []; histIdx = -1; pushHistory();
+  render();
+}
+
+// ═══════════════════════════════════════════════
+// EXPORT / IMPORT JSON
+// ═══════════════════════════════════════════════
+function exportJSON(){
+  const data = { version:1, name:caseName(), nodes:state.nodes, edges:state.edges, camera:state.camera };
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=(caseName().replace(/\s+/g,'_'))+'.gsn.json'; a.click();
+  URL.revokeObjectURL(url);
+  toast('Exported');
+}
+
+function importJSON(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const data = JSON.parse(e.target.result);
+      loadData(data);
+      toast('Imported: '+file.name);
+    } catch(err){ toast('Error reading file'); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ═══════════════════════════════════════════════
+// NEW CASE
+// ═══════════════════════════════════════════════
+function newCase(){
+  if(state.nodes.length && !confirm('Start a new case? Unsaved work will be lost.')) return;
+  state.nodes=[]; state.edges=[];
+  state.camera={x:80,y:80,zoom:1};
+  state.sel={nodeId:null,edgeId:null};
+  state.counters={};
+  history=[]; histIdx=-1;
+  document.getElementById('case-name-input').value='Untitled Case';
+  render();
+}
+
+// ═══════════════════════════════════════════════
+// SAMPLE CASE (Tweety can fly)
+// ═══════════════════════════════════════════════
+function loadSample(){
+  if(state.nodes.length && !confirm('Load sample case? Unsaved work will be lost.')) return;
+  const sample = {
+    version:1, name:'Tweety Can Fly',
+    camera:{ x:60, y:40, zoom:0.9 },
+    nodes:[
+      {id:'c1', type:'claim', label:'C1', text:'Tweety can fly', x:520, y:60, w:180, h:64},
+      {id:'ct1', type:'context', label:'CT1', text:'Tweety is an animal', x:760, y:60, w:180, h:60},
+      {id:'c2', type:'claim', label:'C2', text:'Tweety is a winged bird', x:360, y:200, w:180, h:64},
+      {id:'c3', type:'claim', label:'C3', text:'Tweety is physically able to fly', x:160, y:340, w:190, h:64},
+      {id:'c4', type:'claim', label:'C4', text:'Tweety is a member of a flying bird species', x:430, y:340, w:200, h:80},
+      {id:'c6', type:'claim', label:'C6', text:'Tweety is an adult bird', x:700, y:340, w:180, h:64},
+      {id:'e1', type:'evidence', label:'E1', text:'Physical test report', x:80, y:490, w:80, h:80},
+      {id:'e2', type:'evidence', label:'E2', text:'Sightings of Tweety flying', x:210, y:490, w:80, h:80},
+      {id:'e3', type:'evidence', label:'E3', text:"Tweety's DNA test results", x:380, y:490, w:80, h:80},
+      {id:'c5', type:'claim', label:'C5', text:'DNA sample has no cross-contamination', x:540, y:490, w:200, h:64},
+      {id:'e4', type:'evidence', label:'E4', text:'Lab procedures document', x:540, y:610, w:80, h:80},
+      {id:'r1', type:'rebutting', label:'R1', text:'Unless Tweety is not a bird', x:760, y:200, w:190, h:64},
+      {id:'r2', type:'rebutting', label:'R2', text:'Unless Tweety is handicapped', x:850, y:340, w:190, h:64},
+      {id:'r3', type:'rebutting', label:'R3', text:'Unless Tweety is a penguin', x:1050, y:340, w:190, h:64},
+      {id:'uc1', type:'undercutting', label:'UC1', text:'Unless Tweety is a juvenile bird', x:950, y:200, w:200, h:64},
+    ],
+    edges:[
+      {id:'e_c1c2', from:'c1', to:'c2'},{id:'e_c1ct1', from:'c1', to:'ct1'},
+      {id:'e_c2c3', from:'c2', to:'c3'},{id:'e_c2c4', from:'c2', to:'c4'},
+      {id:'e_c3e1', from:'c3', to:'e1'},{id:'e_c3e2', from:'c3', to:'e2'},
+      {id:'e_c4e3', from:'c4', to:'e3'},{id:'e_c4c5', from:'c4', to:'c5'},
+      {id:'e_c5e4', from:'c5', to:'e4'},
+      {id:'e_c1r1', from:'c1', to:'r1'},{id:'e_r1c2', from:'r1', to:'c2'},
+      {id:'e_c2r2', from:'c2', to:'r2'},{id:'e_r2c3', from:'r2', to:'c3'},
+      {id:'e_c2r3', from:'c2', to:'r3'},{id:'e_r3c4', from:'r3', to:'c4'},
+      {id:'e_c1uc1', from:'c1', to:'uc1'},{id:'e_uc1c6', from:'uc1', to:'c6'},
+    ]
+  };
+  loadData(sample);
+  toast('Loaded: Tweety Can Fly sample');
+}
+
+// ═══════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════
+let toastTimer;
+function toggleHelp(){
+  const bd = document.getElementById('help-backdrop');
+  const panel = document.getElementById('help-panel');
+  const visible = bd.style.display === 'block';
+  bd.style.display = visible ? 'none' : 'block';
+  panel.style.display = visible ? 'none' : 'flex';
+}
+
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+pushHistory();
+render();
+toast('Welcome! Double-click canvas to add a Claim. Hover a node and drag its ○ handles to connect.');
+</script>
+</body>
+</html>
