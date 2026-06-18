@@ -1206,7 +1206,13 @@ function autoLayout(){
     const startX = cursor;
     kids.forEach(k => place(k, depth + 1));
     const endX = cursor - GAP_X;
-    pos[id] = { x: (startX + endX) / 2, y: depth * (ROW_H + GAP_Y) };
+    let cx = (startX + endX) / 2;
+    const hw = n.w / 2;
+    // Guard 1: don't bleed left into the preceding sibling's space
+    if(cx - hw < startX) cx = startX + hw;
+    // Guard 2: don't bleed right into the next sibling's space
+    if(cx + hw + GAP_X > cursor) cursor = cx + hw + GAP_X;
+    pos[id] = { x: cx, y: depth * (ROW_H + GAP_Y) };
   }
 
   let treeX = 0;
