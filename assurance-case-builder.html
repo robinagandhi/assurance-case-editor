@@ -700,9 +700,12 @@ function edgeHTML(e){
   const sel = state.sel.edgeId === e.id;
   const sw = sel ? 2.5 : 1.8;
   const col = sel ? '#0ea5e9' : color;
-  // Gentle cubic bezier
-  const dy = (p2.y - p1.y) * 0.45;
-  const d = `M${p1.x},${p1.y} C${p1.x},${p1.y+dy} ${p2.x},${p2.y-dy} ${p2.x},${p2.y}`;
+  // Direction-aware cubic bezier: control points follow the source→target vector
+  const dx = p2.x - p1.x, dy = p2.y - p1.y;
+  const dist = Math.hypot(dx, dy) || 1;
+  const bend = Math.min(dist * 0.45, 180);
+  const nx = dx / dist, ny = dy / dist;
+  const d = `M${p1.x},${p1.y} C${p1.x+nx*bend},${p1.y+ny*bend} ${p2.x-nx*bend},${p2.y-ny*bend} ${p2.x},${p2.y}`;
   return `<g data-eid="${e.id}">
     <path d="${d}" fill="none" stroke="transparent" stroke-width="10" class="ehit" style="cursor:pointer"/>
     <path d="${d}" fill="none" stroke="${col}" stroke-width="${sw}" ${dash?`stroke-dasharray="${dash}"`:''}
