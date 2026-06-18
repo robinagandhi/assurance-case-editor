@@ -1224,14 +1224,15 @@ function autoLayout(){
   // Apply tree positions
   state.nodes.forEach(n => { if(pos[n.id]){ n.x = pos[n.id].x; n.y = pos[n.id].y; } });
 
-  // Place side nodes (context / justification) to the right of their parent
+  // Place side nodes (context / justification) stacked vertically to the right of their parent
   const sideOff = {};
   state.edges.forEach(e => {
     const t = nodeById(e.to), f = nodeById(e.from);
     if(!t || !f || !SIDE_TYPES.has(t.type) || !pos[f.id]) return;
-    t.x = pos[f.id].x + f.w/2 + 20 + t.w/2 + (sideOff[f.id]||0);
-    t.y = pos[f.id].y;
-    sideOff[f.id] = (sideOff[f.id]||0) + t.w + 12;
+    const yOff = sideOff[f.id] || 0;
+    t.x = pos[f.id].x + f.w/2 + 24 + t.w/2;
+    t.y = pos[f.id].y + yOff;
+    sideOff[f.id] = yOff + t.h + 16;
   });
 
   render();
