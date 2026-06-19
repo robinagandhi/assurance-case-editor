@@ -90,6 +90,17 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
 .def-dot.ok{background:#22c55e}
 .def-dot.nok{background:#ef4444}
 
+/* Claim tips / checklist (sidebar) */
+.sb-tip{background:#f0f9ff;border-left:3px solid #0ea5e9;border-radius:0 4px 4px 0;padding:5px 7px;font-size:10px;color:#0c4a6e;margin-bottom:6px;line-height:1.35}
+.sb-tip b{display:block;margin-bottom:2px;color:#075985}
+.sb-tip .sb-ex{display:block;margin-top:2px;font-style:italic;color:#0369a1}
+.sb-warn{background:#fffbeb;border-left:3px solid #f59e0b;border-radius:0 4px 4px 0;padding:5px 7px;font-size:10px;color:#92400e;margin-bottom:6px;line-height:1.35}
+.chk-item{display:flex;align-items:flex-start;gap:5px;font-size:10.5px;padding:3px 2px;color:#374151;cursor:pointer;border-radius:3px}
+.chk-item:hover{background:#f8fafc}
+.chk-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.chk-dot.ok{background:#22c55e}
+.chk-dot.nok{background:#f59e0b}
+
 /* ── Node editor overlay ── */
 #node-editor{position:absolute;z-index:50;background:#fff;border:1.5px solid #3b82f6;border-radius:8px;padding:12px;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:none}
 #node-editor .ed-title{font-size:11px;font-weight:700;color:#6b7280;margin-bottom:8px}
@@ -104,6 +115,10 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
 #ed-save:hover{background:#2563eb}
 #ed-cancel{background:#e5e7eb;color:#374151}
 #ed-cancel:hover{background:#d1d5db}
+#node-editor .ed-tip{background:#f0f9ff;border-left:3px solid #0ea5e9;border-radius:0 5px 5px 0;padding:6px 9px;font-size:11px;color:#0c4a6e;margin-bottom:8px;line-height:1.4}
+#node-editor .ed-tip b{display:block;margin-bottom:2px;color:#075985}
+#node-editor .ed-tip .ed-ex{display:block;margin-top:3px;font-style:italic;color:#0369a1}
+#node-editor .ed-warn{background:#fffbeb;border-left:3px solid #f59e0b;border-radius:0 5px 5px 0;padding:6px 9px;font-size:11px;color:#92400e;margin-bottom:8px;line-height:1.4}
 
 /* ── Status bar ── */
 #statusbar{position:absolute;bottom:0;left:0;right:0;height:22px;background:rgba(30,41,59,.85);color:#94a3b8;font-size:10px;display:flex;align-items:center;padding:0 10px;gap:16px;z-index:10;pointer-events:none}
@@ -256,6 +271,8 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
       <div class="bac-fraction" id="bac-fraction">—</div>
       <div class="bac-bar-wrap"><div class="bac-bar" id="bac-bar" style="width:0%;background:#e5e7eb"></div></div>
       <div id="bac-list"></div>
+      <div class="sb-title" style="margin-top:14px">Case Checklist</div>
+      <div id="chk-list"></div>
     </div>
   </div>
 </div>
@@ -265,7 +282,7 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
   <div class="ed-title">Edit Node</div>
   <div class="ed-row">
     <label>Type</label>
-    <select id="ed-type">
+    <select id="ed-type" onchange="updateEdTip()">
       <option value="claim">Claim / Goal</option>
       <option value="evidence">Evidence</option>
       <option value="context">Context</option>
@@ -276,14 +293,16 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
       <option value="inference">Inference Rule (IR)</option>
     </select>
   </div>
+  <div class="ed-tip" id="ed-tip"></div>
   <div class="ed-row">
     <label>Label (e.g. C1)</label>
     <input type="text" id="ed-label" maxlength="12">
   </div>
   <div class="ed-row">
     <label>Text</label>
-    <textarea id="ed-text" rows="3"></textarea>
+    <textarea id="ed-text" rows="3" oninput="updateEdTip()"></textarea>
   </div>
+  <div class="ed-warn" id="ed-warn" style="display:none"></div>
   <div class="ed-btns">
     <button id="ed-save" onclick="saveEditor()">Save</button>
     <button id="ed-cancel" onclick="closeEditor()">Cancel</button>
@@ -359,6 +378,11 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
       <li><span style="color:#22c55e;font-weight:700">Green</span> ≥ 80% · <span style="color:#f59e0b;font-weight:700">Orange</span> 40–79% · <span style="color:#ef4444;font-weight:700">Red</span> &lt; 40%</li>
     </ul>
 
+    <h3>Case Checklist &amp; Claim Tips</h3>
+    <p>Below the confidence meter, the <strong>Case Checklist</strong> scans your diagram for common structural issues: disconnected nodes, undeveloped branches, missing descriptions, top-level claims with no Context, and Claims/Evidence that look like they might be missing a verb-phrase or noun-phrase. Click any item to jump to that node.</p>
+    <p>When you add or edit a node — in the popup editor or the right-hand Properties panel — you'll see a short <strong>writing tip</strong> for that node type with a good example, plus a live warning if your text looks off.</p>
+    <div class="note">These are heuristic nudges based on simple pattern-matching, not hard rules or NLP — they will miss real issues and occasionally flag fine text. Use your judgment as the case author; nothing is blocked from saving.</div>
+
     <h3>Keyboard Shortcuts</h3>
     <table>
       <tr><th>Key</th><th>Action</th></tr>
@@ -378,7 +402,7 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
       <li><strong>Save SVG</strong> — exports the complete diagram as a scalable vector graphic (<code>.svg</code>) suitable for reports, slides, or printing. Handles and selection are not included.</li>
       <li><strong>Load Sample</strong> — loads the <em>Tweety Can Fly</em> example from the course lecture to explore.</li>
     </ul>
-    <div class="note">Your work is also auto-saved in the browser as a crash recovery backup. This is separate from the disc file — always use <strong>Save to Disc</strong> to keep a permanent copy.</div>
+    <div class="note">Your work is also auto-saved in the browser as a crash recovery backup. If you reopen the tool and a backup is found, you'll be asked whether to restore it. This is separate from the disc file — always use <strong>Save to Disc</strong> to keep a permanent copy.</div>
 
   </div>
 </div>
@@ -399,6 +423,38 @@ const TYPE = {
 };
 
 const DEFEATER_TYPES = new Set(['rebutting','undermining','undercutting']);
+
+// Per-type writing guidance shown in the editor and sidebar (mirrors the Help modal examples)
+const GUIDANCE = {
+  claim:        { rule:'Noun-phrase + verb-phrase about a critical, falsifiable property — not an action and not trivially observable.', good:'The login page has no exploitable SQL injection weakness.' },
+  evidence:     { rule:'A noun-phrase only — a tangible, observable artifact.', good:'Test results from penetration tools.' },
+  context:      { rule:'Scope or definition that helps interpret the claim above it.', good:'Supply chain process as defined in NIST SP 800-160.' },
+  justification:{ rule:'Rationale for why a claim or inference was introduced.', good:'Intelligence reports of malicious code in nuclear energy software.' },
+  rebutting:    { rule:'"Unless…" doubt that challenges a claim directly.', good:'Unless Tweety is a penguin.' },
+  undermining:  { rule:'"Unless…" doubt that challenges the evidence behind a claim.', good:'Unless the DNA test was contaminated.' },
+  undercutting: { rule:'"Unless…" doubt that challenges an inference rule.', good:'Unless Tweety is a juvenile bird.' },
+  inference:    { rule:'Makes an implicit inference explicit, as an If…then rule, so it can be challenged.', good:'If Tweety is a bird then it can fly.' }
+};
+
+// Heuristic, non-exhaustive pattern checks — nudges, not hard rules
+const VERB_HINTS = /\b(is|are|was|were|am|be|been|being|has|have|had|do|does|did|can|could|will|would|shall|should|may|might|must|minimizes?|provides?|prevents?|protects?|ensures?|supports?|maintains?|satisfies|meets|contains?|detects?|mitigates?|encrypts?|validates?|verifies|complies?|enables?|allows?|reduces?|increases?|limits?|controls?|handles?|implements?|achieves?|resists?)\b/i;
+const ACTION_START = /^(perform|run|test|conduct|execute|check|verify|validate|inspect|review|audit|analyze|scan|assess|implement|configure|enable|disable)\b/i;
+const SENTENCE_START = /^(we|i|they|he|she|it|our team|the team)\b/i;
+
+function checkText(type, text){
+  const t = (text||'').trim();
+  if(!t) return null;
+  const words = t.split(/\s+/).filter(Boolean);
+  if(type === 'claim'){
+    if(ACTION_START.test(t)) return 'Reads like an action, not a property claim. Try rephrasing as a statement about the system.';
+    if(!VERB_HINTS.test(t)) return 'No verb phrase detected — a Claim needs a noun-phrase + verb-phrase.';
+  }
+  if(type === 'evidence'){
+    if(SENTENCE_START.test(t) || (VERB_HINTS.test(t) && words.length > 4)) return 'Reads like a full sentence — Evidence should usually be a noun-phrase only.';
+  }
+  if(words.length === 1) return 'Very short — consider whether more detail would make this self-explanatory.';
+  return null;
+}
 
 // ═══════════════════════════════════════════════
 // STATE
@@ -736,22 +792,36 @@ function updateSidebar(){
   const n = nodeById(state.sel.nodeId);
   const pc = document.getElementById('props-content');
   if(n){
+    const g = GUIDANCE[n.type];
     pc.innerHTML = `
       <div class="sb-row"><label>Type</label>
         <select class="sb-input" onchange="updateNodeType(this.value)">
           ${Object.keys(TYPE).map(k=>`<option value="${k}"${k===n.type?' selected':''}>${k}</option>`).join('')}
         </select>
       </div>
+      ${g ? `<div class="sb-tip"><b>${n.type.charAt(0).toUpperCase()+n.type.slice(1)} tip</b>${esc(g.rule)}<span class="sb-ex">e.g. "${esc(g.good)}"</span></div>` : ''}
       <div class="sb-row"><label>Label</label>
         <input class="sb-input" type="text" value="${esc(n.label)}" oninput="updateNodeProp('label',this.value)">
       </div>
       <div class="sb-row"><label>Text</label>
         <textarea class="sb-input" rows="4" oninput="updateNodeProp('text',this.value)">${esc(n.text)}</textarea>
-      </div>`;
+      </div>
+      <div class="sb-warn" id="sb-warn" style="display:none"></div>`;
   } else {
     pc.innerHTML = '<p class="sb-placeholder">Select a node to edit</p>';
   }
+  updateSidebarWarning();
   updateBaconian();
+  updateChecklist();
+}
+
+function updateSidebarWarning(){
+  const n = nodeById(state.sel.nodeId);
+  const warnEl = document.getElementById('sb-warn');
+  if(!warnEl) return;
+  const msg = n ? checkText(n.type, n.text) : null;
+  if(msg){ warnEl.textContent = '⚠ ' + msg; warnEl.style.display = 'block'; }
+  else { warnEl.style.display = 'none'; }
 }
 
 function updateNodeProp(prop, val){
@@ -759,6 +829,7 @@ function updateNodeProp(prop, val){
   if(!n) return;
   n[prop] = val;
   renderCanvas(); // don't rebuild sidebar — would destroy focus mid-typing
+  updateSidebarWarning();
 }
 
 function updateNodeType(val){
@@ -797,6 +868,62 @@ function updateStatus(){
   document.getElementById('st-nodes').textContent = state.nodes.length;
   document.getElementById('st-edges').textContent = state.edges.length;
   document.getElementById('st-zoom').textContent = Math.round(state.camera.zoom*100)+'%';
+}
+
+// ═══════════════════════════════════════════════
+// CASE CHECKLIST (structural validation)
+// ═══════════════════════════════════════════════
+function validateCase(){
+  const issues = [];
+  state.nodes.forEach(n => {
+    const hasIn  = state.edges.some(e => e.to === n.id);
+    const hasOut = state.edges.some(e => e.from === n.id);
+
+    if(!n.text.trim()){
+      issues.push({ nodeId:n.id, msg:`${n.label} has no description text yet.` });
+    } else {
+      const m = checkText(n.type, n.text);
+      if(m) issues.push({ nodeId:n.id, msg:`${n.label}: ${m}` });
+    }
+
+    if(!hasIn && !hasOut && state.nodes.length > 1){
+      issues.push({ nodeId:n.id, msg:`${n.label} is disconnected from the rest of the case.` });
+    } else if((n.type === 'claim' || DEFEATER_TYPES.has(n.type)) && !hasOut){
+      issues.push({ nodeId:n.id, msg:`${n.label} is undeveloped — add a sub-claim or evidence, or accept it as-is.` });
+    }
+
+    if(n.type === 'claim' && !hasIn){
+      const hasContext = state.edges.some(e => e.from === n.id && nodeById(e.to)?.type === 'context');
+      if(!hasContext) issues.push({ nodeId:n.id, msg:`${n.label} is a top-level claim with no Context — consider adding one to scope it.` });
+    }
+  });
+  return issues;
+}
+
+function updateChecklist(){
+  const list = document.getElementById('chk-list');
+  if(!list) return;
+  if(!state.nodes.length){
+    list.innerHTML = '<p class="sb-placeholder" style="font-size:10px">Add nodes to see checks</p>';
+    return;
+  }
+  const issues = validateCase();
+  if(!issues.length){
+    list.innerHTML = '<div class="chk-item"><div class="chk-dot ok"></div><span>No issues found</span></div>';
+    return;
+  }
+  list.innerHTML = issues.map(iss =>
+    `<div class="chk-item" onclick="focusNode('${iss.nodeId}')"><div class="chk-dot nok"></div><span>${esc(iss.msg)}</span></div>`
+  ).join('');
+}
+
+function focusNode(id){
+  const n = nodeById(id); if(!n) return;
+  state.sel = { nodeId:id, edgeId:null };
+  const r = cvs.getBoundingClientRect();
+  state.camera.x = r.width/2 - n.x*state.camera.zoom;
+  state.camera.y = r.height/2 - n.y*state.camera.zoom;
+  render();
 }
 
 // ═══════════════════════════════════════════════
@@ -855,12 +982,26 @@ function deleteEdge(id){
 // ═══════════════════════════════════════════════
 let editingNodeId = null;
 
+function updateEdTip(){
+  const type = document.getElementById('ed-type').value;
+  const g = GUIDANCE[type];
+  const tip = document.getElementById('ed-tip');
+  if(g){
+    tip.innerHTML = `<b>${type.charAt(0).toUpperCase()+type.slice(1)} tip</b>${esc(g.rule)}<span class="ed-ex">e.g. "${esc(g.good)}"</span>`;
+  }
+  const warnEl = document.getElementById('ed-warn');
+  const msg = checkText(type, document.getElementById('ed-text').value);
+  if(msg){ warnEl.textContent = '⚠ ' + msg; warnEl.style.display = 'block'; }
+  else { warnEl.style.display = 'none'; }
+}
+
 function openEditor(n){
   editingNodeId = n.id;
   const ed = document.getElementById('node-editor');
   document.getElementById('ed-type').value = n.type;
   document.getElementById('ed-label').value = n.label;
   document.getElementById('ed-text').value = n.text;
+  updateEdTip();
   // Position near node
   const sp = c2s(n.x, n.y);
   const wrap = document.getElementById('canvas-wrap');
@@ -1279,6 +1420,20 @@ function redo(){
 // ═══════════════════════════════════════════════
 function caseName(){ return document.getElementById('case-name-input').value.trim() || 'Untitled Case'; }
 
+function tryRestoreAutosave(){
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem('gsn__autosave')); } catch(e){}
+  if(!saved || !Array.isArray(saved.nodes) || !saved.nodes.length) return false;
+  const n = saved.nodes.length;
+  if(confirm(`Restore unsaved work from your last session? ("${saved.name || 'Untitled Case'}", ${n} node${n===1?'':'s'})`)){
+    loadData(saved);
+    toast('Restored last session');
+    return true;
+  }
+  localStorage.removeItem('gsn__autosave');
+  return false;
+}
+
 // ═══════════════════════════════════════════════
 // SAVE / OPEN FILE
 // ═══════════════════════════════════════════════
@@ -1381,6 +1536,7 @@ function newCase(){
   state.counters={};
   history=[]; histIdx=-1;
   document.getElementById('case-name-input').value='Untitled Case';
+  pushHistory();
   render();
 }
 
@@ -1453,9 +1609,11 @@ function toast(msg){
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
-pushHistory();
-render();
-toast('Welcome! Double-click canvas to add a Claim. Hover a node and drag its ○ handles to connect.');
+if(!tryRestoreAutosave()){
+  pushHistory();
+  render();
+  toast('Welcome! Double-click canvas to add a Claim. Hover a node and drag its ○ handles to connect.');
+}
 </script>
 </body>
 </html>

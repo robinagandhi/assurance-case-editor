@@ -33,12 +33,12 @@ Developed to support the *Software Assurance* course at the University of Nebras
 | **U** | Undermining Defeater | Light-blue box | *Unless…* doubt that challenges **evidence**. |
 | **UC** | Undercutting Defeater | Light-green box | *Unless…* doubt that challenges an **inference rule**. |
 
-### Branch end markers (manual)
+### Branch indicators (automatic)
 
-Add these from the **Branch Ends** section in the palette, then connect them to the last node in a branch:
+These appear on their own — there's nothing to add from the palette:
 
-- **◆ Undeveloped** — small black diamond. Place after a Claim or Defeater to signal the branch still needs further argument or evidence.
-- **● Complete** — small grey filled circle. Place after an Evidence node to signal the branch is fully supported.
+- **◆ Black diamond** — appears automatically below any Claim or Defeater with no outgoing connections, marking the branch as *undeveloped*. Disappears as soon as you connect something below it.
+- **⬤ Grey circle** — appears automatically below any Evidence node with no outgoing connections, marking the branch as *complete*. Disappears as soon as you connect something below it.
 
 ---
 
@@ -72,15 +72,23 @@ A defeater is *addressed* when it has at least one outgoing connection (i.e., it
 
 ---
 
+## Case Checklist & Claim-Writing Tips
+
+Below the confidence meter, the **Case Checklist** flags structural issues across the whole diagram — disconnected nodes, undeveloped branches, missing descriptions, top-level claims with no Context, and Claims/Evidence text that looks like it's missing a verb-phrase or noun-phrase. Click any item to jump to that node.
+
+When you add or edit a node (popup editor or the sidebar Properties panel), a short writing tip for that node type appears with a good example, plus a live warning if your text looks off. These are heuristic suggestions, not hard rules — they don't block saving.
+
+---
+
 ## Save, Load, Export
 
 | Action | Where |
 |--------|-------|
-| Save to browser | **Save** button or Ctrl+S — stores in `localStorage` keyed by case name |
-| Load from browser | **Load** button — lists saved cases |
-| Export JSON | **Export** button — downloads `<name>.json` |
-| Import JSON | **Import** button — loads a previously exported file |
+| Save to disc | **Save to Disc** button or Ctrl+S — downloads a `<name>.gsn.json` file |
+| Open a file | **Open File** button — loads a previously saved `.gsn.json` file |
+| Export SVG | **Save SVG** button — downloads a `<name>.svg` |
 | New case | **New** button — prompts if unsaved changes exist |
+| Crash recovery | Every change is auto-saved to `localStorage`. On reopening the tool, you'll be prompted to restore it if found |
 
 ---
 

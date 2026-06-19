@@ -26,7 +26,8 @@ assurance-case-builder.html
     ├── Interaction  onDown() / onMove() / onUp() / onDbl() / onKey() / onWheel()
     ├── Layout       autoLayout() — BFS + post-order X packing
     ├── History      pushHistory() / undo() / redo()  (JSON snapshots, max 25)
-    └── Persistence  saveCase() / loadCase() / exportJSON() / importJSON()
+    ├── Persistence  saveToDisc() / openFile() / loadData() / tryRestoreAutosave()
+    └── Validation   GUIDANCE{} / checkText() / validateCase() / updateChecklist() / focusNode()
 ```
 
 ---
@@ -79,6 +80,15 @@ When adding a new node type, also update:
 - The palette button in the HTML
 - The help modal node-types table
 - The sidebar `<select>` options
+- `GUIDANCE` constant (rule + good example shown in the editor tip and sidebar tip)
+
+---
+
+## Case Checklist & Claim Tips
+
+`GUIDANCE` (rule + good example per type) drives the tip box in both the popup editor (`#ed-tip`) and the sidebar Properties panel (`.sb-tip`). `checkText(type, text)` is a heuristic, regex-based pattern check (no NLP) limited to `claim` and `evidence` — it returns a warning string or `null` and never blocks saving. `validateCase()` runs `checkText()` plus structural checks (disconnected nodes, undeveloped branches, top-level claims with no Context) across the whole graph and feeds the sidebar's Case Checklist (`updateChecklist()`); clicking an item calls `focusNode(id)` to select and re-center the camera on it.
+
+Keep these as soft nudges, not hard validation — the heuristics will have false positives/negatives, and saves must never be blocked on them.
 
 ---
 
