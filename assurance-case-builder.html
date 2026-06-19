@@ -379,7 +379,7 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
     </ul>
 
     <h3>Case Checklist &amp; Claim Tips</h3>
-    <p>Below the confidence meter, the <strong>Case Checklist</strong> scans your diagram for common structural issues: disconnected nodes, undeveloped branches, missing descriptions, top-level claims with no Context, and Claims/Evidence that look like they might be missing a verb-phrase or noun-phrase. Click any item to jump to that node.</p>
+    <p>Below the confidence meter, the <strong>Case Checklist</strong> scans your diagram for common structural issues: disconnected nodes, undeveloped branches, missing descriptions, top-level claims with no Context, Claims that read like an action/method instead of a property, and Evidence that reads like a full sentence instead of a noun-phrase. Click any item to jump to that node.</p>
     <p>When you add or edit a node — in the popup editor or the right-hand Properties panel — you'll see a short <strong>writing tip</strong> for that node type with a good example, plus a live warning if your text looks off.</p>
     <div class="note">These are heuristic nudges based on simple pattern-matching, not hard rules or NLP — they will miss real issues and occasionally flag fine text. Use your judgment as the case author; nothing is blocked from saving.</div>
 
@@ -437,7 +437,7 @@ const GUIDANCE = {
 };
 
 // Heuristic, non-exhaustive pattern checks — nudges, not hard rules
-const VERB_HINTS = /\b(is|are|was|were|am|be|been|being|has|have|had|do|does|did|can|could|will|would|shall|should|may|might|must|minimizes?|provides?|prevents?|protects?|ensures?|supports?|maintains?|satisfies|meets|contains?|detects?|mitigates?|encrypts?|validates?|verifies|complies?|enables?|allows?|reduces?|increases?|limits?|controls?|handles?|implements?|achieves?|resists?)\b/i;
+const VERB_HINTS = /\b(is|are|was|were|am|be|been|being|has|have|had|do|does|did|can|could|will|would|shall|should|may|might|must|minimizes?|provides?|prevents?|protects?|ensures?|supports?|maintains?|satisfies|meets|contains?|detects?|mitigates?|encrypts?|validates?|verifies|complies?|enables?|allows?|reduces?|increases?|limits?|controls?|handles?|implements?|achieves?|resists?|produces?|delivers?|develops?|prepares?|demonstrates?|improves?|generates?|fosters?|promotes?|equips?|trains?|requires?|eliminates?|withstands?|sustains?|maximizes?|optimizes?|facilitates?|retains?|enhances?|strengthens?|uses?|used)\b/i;
 const ACTION_START = /^(perform|run|test|conduct|execute|check|verify|validate|inspect|review|audit|analyze|scan|assess|implement|configure|enable|disable)\b/i;
 const SENTENCE_START = /^(we|i|they|he|she|it|our team|the team)\b/i;
 
@@ -447,7 +447,6 @@ function checkText(type, text){
   const words = t.split(/\s+/).filter(Boolean);
   if(type === 'claim'){
     if(ACTION_START.test(t)) return 'Reads like an action, not a property claim. Try rephrasing as a statement about the system.';
-    if(!VERB_HINTS.test(t)) return 'No verb phrase detected — a Claim needs a noun-phrase + verb-phrase.';
   }
   if(type === 'evidence'){
     if(SENTENCE_START.test(t) || (VERB_HINTS.test(t) && words.length > 4)) return 'Reads like a full sentence — Evidence should usually be a noun-phrase only.';

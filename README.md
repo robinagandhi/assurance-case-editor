@@ -74,7 +74,7 @@ A defeater is *addressed* when it has at least one outgoing connection (i.e., it
 
 ## Case Checklist & Claim-Writing Tips
 
-Below the confidence meter, the **Case Checklist** flags structural issues across the whole diagram — disconnected nodes, undeveloped branches, missing descriptions, top-level claims with no Context, and Claims/Evidence text that looks like it's missing a verb-phrase or noun-phrase. Click any item to jump to that node.
+Below the confidence meter, the **Case Checklist** flags structural issues across the whole diagram — disconnected nodes, undeveloped branches, missing descriptions, top-level claims with no Context, Claims that read like an action/method instead of a property, and Evidence that reads like a full sentence instead of a noun-phrase. Click any item to jump to that node.
 
 When you add or edit a node (popup editor or the sidebar Properties panel), a short writing tip for that node type appears with a good example, plus a live warning if your text looks off. These are heuristic suggestions, not hard rules — they don't block saving.
 
