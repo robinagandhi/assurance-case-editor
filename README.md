@@ -13,9 +13,9 @@ Developed to support the *Software Assurance* course at the University of Nebras
 ## Getting Started
 
 1. Open `assurance-case-builder.html` in any modern browser (Chrome, Firefox, Safari, Edge).
-2. Click a node type in the left palette to add it to the canvas.
+2. Click a node type in the left palette to add it to the canvas, or drag it onto an exact spot.
 3. Double-click a node to edit its label and description.
-4. Drag from the midpoint handles (◦) on a node's edges to connect nodes.
+4. Drag from the midpoint handles (◦) on a node's edges to connect nodes — or hover/select a Claim, Defeater, or Inference Rule and click the **+** button beside it to add an already-connected sub-claim.
 5. Click **Load Sample** in the toolbar to see a complete worked example (Tweety-can-fly).
 
 ---
@@ -46,17 +46,25 @@ These appear on their own — there's nothing to add from the palette:
 
 | Action | How |
 |--------|-----|
-| Pan | Drag on empty canvas, or Space + drag |
-| Zoom | Scroll wheel (zooms toward cursor) |
+| Pan | Drag on empty canvas, or Space + drag (one-finger drag on touch) |
+| Zoom | Scroll wheel (zooms toward cursor), or pinch with two fingers on touch |
 | Select | Click a node or edge |
-| Move node | Drag a selected or unselected node |
+| Multi-select | Shift+click nodes one at a time, or Shift+drag empty canvas for a marquee box |
+| Move node(s) | Drag a selected node — drags the whole selection if more than one is selected |
+| Nudge selection | Arrow keys (Shift+arrow for a bigger step) |
 | Resize node | Select a node, then drag any blue corner handle |
 | Connect nodes | Drag from a midpoint handle (◦), or use **→ Connect** mode in the palette |
-| Delete | Select then press **Delete/Backspace**, or use **✕ Delete** mode |
+| Quick-add child | Hover/select a Claim, Defeater, or Inference Rule, then click the **+** beside it |
+| Duplicate | Select, then Ctrl/⌘+D |
+| Copy / Paste | Ctrl/⌘+C, then Ctrl/⌘+V (repeatable); or right-click empty canvas → Paste, to drop at that spot |
+| Right-click menu | Node: duplicate, copy, select subtree, change type, delete. Edge: delete. Empty canvas: add claim, paste |
+| Delete | Select then press **Delete/Backspace** (deletes the whole selection), or use **✕ Delete** mode |
 | Undo / Redo | Ctrl+Z / Ctrl+Y (or ⌘Z / ⌘Y on Mac), or buttons in palette |
 | Edit node | Double-click |
-| Fit all | **Fit** button (bottom-right of canvas) |
+| Fit all | **Fit** button (bottom-right of canvas) — fits visible (non-collapsed) nodes |
 | Auto layout | **Auto Layout** button — arranges into Claim → sub-claims → defeaters → evidence hierarchy |
+| Collapse/expand branch | Click the **−**/**+** toggle below a node that has outgoing connections |
+| Find in diagram | Toolbar search box — Enter/Shift+Enter cycles matches, Escape clears |
 
 ---
 
@@ -80,6 +88,24 @@ When you add or edit a node (popup editor or the sidebar Properties panel), a sh
 
 ---
 
+## Outline View & Collapsing Branches
+
+The sidebar has a **Checklist** / **Outline** tab switcher. Outline shows the whole case as a nested, clickable tree — useful for jumping around a large diagram. On the canvas itself, any node with outgoing connections gets a **−**/**+** toggle that collapses or expands everything below it. Collapse state is a view preference only — it isn't written to the saved `.gsn.json` file or the exported SVG, and clicking a checklist/outline entry auto-expands whatever was hiding it.
+
+---
+
+## Review Mode (Reviewer Notes)
+
+Toggle **Review Mode** in the toolbar to reveal a *Reviewer Note* field on nodes — separate from the student's own claim/evidence text — in both the popup editor and the Properties sidebar. Intended for instructor or peer feedback on a specific node. Any node carrying a note shows a small amber **!** badge at all times, even with Review Mode off, so comments are easy to spot while browsing.
+
+---
+
+## Presenter Mode
+
+Click **▶ Present** (floating bottom toolbar) to step through the case top-down, one node at a time, in the same order as the Outline view. The current node is ringed and everything else dims; a caption bar shows its label and text. Use →/Space and ← to move, Escape to exit. Editing and right-click are disabled while presenting; exiting restores your previous pan/zoom.
+
+---
+
 ## Save, Load, Export
 
 | Action | Where |
@@ -96,9 +122,8 @@ When you add or edit a node (popup editor or the sidebar Properties panel), a sh
 
 ```
 assurance-case-builder.html   ← the entire app (single file, no dependencies)
-lecture-2/                    ← course lecture slides (remark.js presentations)
+slides/                       ← course lecture slides (remark.js presentation)
   assurance-case.html         ← slide deck entry point
-  assurance-case-exercise.html
   include/
     assurance-case.md         ← slide source (Markdown)
   images/                     ← diagrams and SVG exports
@@ -108,7 +133,7 @@ lecture-2/                    ← course lecture slides (remark.js presentations
 
 ## Lecture Material
 
-The `lecture-2/` folder contains slide decks for the GSN / assurance case lecture, built with [remark.js](https://remarkjs.com). Open `lecture-2/assurance-case.html` in a browser to view the slides. Slides source is in `lecture-2/include/assurance-case.md`.
+The `slides/` folder contains the slide deck for the GSN / assurance case lecture, built with [remark.js](https://remarkjs.com). Open `slides/assurance-case.html` in a browser to view the slides. Slide source is in `slides/include/assurance-case.md`.
 
 ---
 
@@ -119,3 +144,6 @@ The `lecture-2/` folder contains slide decks for the GSN / assurance case lectur
 - Full re-render (`renderCanvas()`) is called on every state mutation. `render()` additionally rebuilds the sidebar; property edits call only `renderCanvas()` to avoid destroying textarea focus mid-keystroke.
 - Undo/redo is implemented as JSON snapshots (`history[]`, max 25 states).
 - Auto-layout uses BFS layer assignment + post-order X packing; auxiliary nodes (Context, Justification, Inference) are placed to the right of their parent rather than in the main tree.
+- Selection is `state.sel` (primary) plus `state.multi` (a `Set` of additional ids); `selectedIds()` merges them. Collapse state (`state.collapsed`) and search matches (`state.searchMatchIds`) are session-only — never written to the saved `.gsn.json`.
+- Touch input is translated into the existing mouse handlers (`onDown`/`onMove`/`onUp`) via synthetic event objects; two-finger pinch is handled separately for zoom.
+- Presenter mode and the Outline view share one traversal helper (`flattenOutlineOrder()` / `buildOutlineTree()`) so both walk the case in the same top-down order.

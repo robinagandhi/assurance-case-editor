@@ -19,6 +19,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;height:10
 .tbtn.active{background:#0ea5e9;border-color:#0ea5e9;color:#fff}
 #case-name-input{background:#334155;border:1px solid #475569;color:#e2e8f0;border-radius:5px;padding:4px 8px;font-size:12px;width:160px}
 #case-name-input:focus{outline:none;border-color:#3b82f6}
+#search-box{display:flex;align-items:center;gap:6px;margin-left:auto}
+#search-input{background:#334155;border:1px solid #475569;color:#e2e8f0;border-radius:5px;padding:4px 8px;font-size:12px;width:150px}
+#search-input:focus{outline:none;border-color:#3b82f6}
+#search-count{font-size:11px;color:#94a3b8;min-width:32px;text-align:right}
 
 /* ── Main layout ── */
 #main{display:flex;flex:1;overflow:hidden}
@@ -51,7 +55,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;height:10
 
 /* ── Canvas ── */
 #canvas-wrap{flex:1;position:relative;overflow:hidden;background:#f8f9fa}
-#canvas{width:100%;height:100%;display:block;cursor:default}
+#canvas{width:100%;height:100%;display:block;cursor:default;touch-action:none}
 #canvas.mode-connect{cursor:crosshair}
 #canvas.mode-delete{cursor:not-allowed}
 
@@ -64,10 +68,30 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;height:10
 .ftbtn:hover{background:#475569}
 .ftbtn.active{background:#0ea5e9;border-color:#0ea5e9;color:#fff}
 .ftbtn.danger:hover{background:#ef4444;border-color:#ef4444}
+.ftbtn:disabled{opacity:.4;cursor:default}
+.ftbtn:disabled:hover{background:#334155}
+
+/* ── Presenter mode ── */
+#presenter-bar{position:absolute;top:16px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #334155;border-radius:8px;padding:8px 12px;display:none;flex-direction:column;align-items:center;gap:6px;z-index:25;box-shadow:0 4px 12px rgba(0,0,0,.25);max-width:min(560px,80vw)}
+#presenter-caption{color:#e2e8f0;font-size:12px;text-align:center;line-height:1.4;max-height:60px;overflow-y:auto}
+#presenter-progress{font-size:11px;color:#94a3b8;min-width:42px;text-align:center}
+.gnode-dim{opacity:.18;transition:opacity .25s}
+#canvas-wrap.presenting .quick-add,
+#canvas-wrap.presenting .conn-handle,
+#canvas-wrap.presenting .resize-handle,
+#canvas-wrap.presenting .collapse-toggle{display:none}
 
 /* Connection handles */
 .conn-handle{fill:white;stroke:#94a3b8;stroke-width:1.5;pointer-events:none;opacity:.3;transition:opacity .15s,fill .15s,stroke .15s}
 .gnode:hover .conn-handle{opacity:1;fill:#0ea5e9;stroke:white}
+
+/* Quick-add (+) button */
+.quick-add{opacity:0;pointer-events:none;transition:opacity .15s}
+.gnode:hover .quick-add,.gnode.qa-selected .quick-add{opacity:1}
+
+/* Collapse/expand toggle */
+.collapse-toggle{cursor:pointer}
+.collapse-toggle:hover circle{stroke:#0ea5e9}
 
 /* ── Sidebar ── */
 #sidebar{width:200px;background:#fff;border-left:1px solid #d1d5db;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
@@ -101,6 +125,18 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
 .chk-dot.ok{background:#22c55e}
 .chk-dot.nok{background:#f59e0b}
 
+/* Sidebar tabs (Checklist / Outline) */
+.sb-tabs{display:flex;gap:4px;margin-bottom:6px}
+.sb-tab{flex:1;padding:4px 0;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;border:1px solid #d1d5db;background:#f9fafb;color:#6b7280;cursor:pointer;border-radius:4px}
+.sb-tab.active{background:#0ea5e9;border-color:#0ea5e9;color:#fff}
+
+/* Outline tree */
+.otl-row{display:flex;align-items:flex-start;gap:4px;font-size:10.5px;padding:3px 2px;color:#374151;cursor:pointer;border-radius:3px}
+.otl-row:hover{background:#f8fafc}
+.otl-toggle{flex-shrink:0;width:11px;color:#9ca3af;font-size:9px;line-height:1.55;cursor:pointer}
+.otl-prefix{font-weight:700;flex-shrink:0}
+.otl-text{color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 /* ── Node editor overlay ── */
 #node-editor{position:absolute;z-index:50;background:#fff;border:1.5px solid #3b82f6;border-radius:8px;padding:12px;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:none}
 #node-editor .ed-title{font-size:11px;font-weight:700;color:#6b7280;margin-bottom:8px}
@@ -119,6 +155,16 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
 #node-editor .ed-tip b{display:block;margin-bottom:2px;color:#075985}
 #node-editor .ed-tip .ed-ex{display:block;margin-top:3px;font-style:italic;color:#0369a1}
 #node-editor .ed-warn{background:#fffbeb;border-left:3px solid #f59e0b;border-radius:0 5px 5px 0;padding:6px 9px;font-size:11px;color:#92400e;margin-bottom:8px;line-height:1.4}
+
+/* ── Context menu ── */
+#context-menu{position:fixed;z-index:60;background:#fff;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:5px;min-width:175px;display:none;font-size:12px;max-height:70vh;overflow-y:auto}
+.cm-item{padding:6px 10px;border-radius:5px;cursor:pointer;color:#1f2937;white-space:nowrap}
+.cm-item:hover{background:#f1f5f9}
+.cm-item.danger{color:#b91c1c}
+.cm-item.disabled{color:#9ca3af;cursor:default}
+.cm-item.disabled:hover{background:none}
+.cm-sep{height:1px;background:#e5e7eb;margin:4px 2px}
+.cm-label{font-size:10px;font-weight:700;color:#9ca3af;padding:5px 10px 2px;text-transform:uppercase;letter-spacing:.04em}
 
 /* ── Status bar ── */
 #statusbar{position:absolute;bottom:0;left:0;right:0;height:22px;background:rgba(30,41,59,.85);color:#94a3b8;font-size:10px;display:flex;align-items:center;padding:0 10px;gap:16px;z-index:10;pointer-events:none}
@@ -180,7 +226,13 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
   <button class="tbtn" onclick="saveSVG()">Save SVG</button>
   <div class="sep"></div>
   <button class="tbtn" onclick="loadSample()">Load Sample</button>
-  <button class="tbtn" onclick="toggleHelp()" style="margin-left:auto">? Help</button>
+  <div class="sep"></div>
+  <button class="tbtn" id="review-toggle" onclick="toggleReviewMode()" title="Show/hide reviewer notes on nodes">Review Mode</button>
+  <div id="search-box">
+    <input id="search-input" type="text" placeholder="Find in diagram…" title="Find in diagram (Enter: next, Shift+Enter: prev, Esc: clear)" oninput="onSearchInput()" onkeydown="onSearchKeydown(event)">
+    <span id="search-count"></span>
+  </div>
+  <button class="tbtn" onclick="toggleHelp()">? Help</button>
 </div>
 
 <!-- Main -->
@@ -190,23 +242,23 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
   <div id="palette">
     <div class="pal-section">
       <div class="pal-label">Core</div>
-      <button class="pal-btn" data-type="claim" onclick="addNode('claim')">Claim / Goal</button>
-      <button class="pal-btn" data-type="evidence" onclick="addNode('evidence')">Evidence</button>
+      <button class="pal-btn" data-type="claim" draggable="true" ondragstart="onPaletteDragStart(event,'claim')" onclick="addNode('claim')">Claim / Goal</button>
+      <button class="pal-btn" data-type="evidence" draggable="true" ondragstart="onPaletteDragStart(event,'evidence')" onclick="addNode('evidence')">Evidence</button>
     </div>
     <div class="pal-section">
       <div class="pal-label">Context</div>
-      <button class="pal-btn" data-type="context" onclick="addNode('context')">Context</button>
-      <button class="pal-btn" data-type="justification" onclick="addNode('justification')">Justification</button>
+      <button class="pal-btn" data-type="context" draggable="true" ondragstart="onPaletteDragStart(event,'context')" onclick="addNode('context')">Context</button>
+      <button class="pal-btn" data-type="justification" draggable="true" ondragstart="onPaletteDragStart(event,'justification')" onclick="addNode('justification')">Justification</button>
     </div>
     <div class="pal-section">
       <div class="pal-label">Defeaters</div>
-      <button class="pal-btn" data-type="rebutting" onclick="addNode('rebutting')">Rebutting (R)</button>
-      <button class="pal-btn" data-type="undermining" onclick="addNode('undermining')">Undermining (U)</button>
-      <button class="pal-btn" data-type="undercutting" onclick="addNode('undercutting')">Undercutting (UC)</button>
+      <button class="pal-btn" data-type="rebutting" draggable="true" ondragstart="onPaletteDragStart(event,'rebutting')" onclick="addNode('rebutting')">Rebutting (R)</button>
+      <button class="pal-btn" data-type="undermining" draggable="true" ondragstart="onPaletteDragStart(event,'undermining')" onclick="addNode('undermining')">Undermining (U)</button>
+      <button class="pal-btn" data-type="undercutting" draggable="true" ondragstart="onPaletteDragStart(event,'undercutting')" onclick="addNode('undercutting')">Undercutting (UC)</button>
     </div>
     <div class="pal-section">
       <div class="pal-label">Other</div>
-      <button class="pal-btn" data-type="inference" onclick="addNode('inference')">Inference Rule</button>
+      <button class="pal-btn" data-type="inference" draggable="true" ondragstart="onPaletteDragStart(event,'inference')" onclick="addNode('inference')">Inference Rule</button>
     </div>
     <div class="pal-section">
       <div class="pal-label">Tools</div>
@@ -248,6 +300,20 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
       <button class="ftbtn" onclick="fitView()">Fit</button>
       <button class="ftbtn" onclick="zoom(1.2)">+</button>
       <button class="ftbtn" onclick="zoom(.83)">−</button>
+      <span style="width:1px;height:20px;background:#475569;display:inline-block"></span>
+      <button class="ftbtn" onclick="startPresenter()">&#9654; Present</button>
+    </div>
+
+    <!-- Presenter bar -->
+    <div id="presenter-bar">
+      <div id="presenter-caption"></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="ftbtn" id="presenter-prev" onclick="presenterPrev()">&#8592; Prev</button>
+        <span id="presenter-progress"></span>
+        <button class="ftbtn" id="presenter-next" onclick="presenterNext()">Next &#8594;</button>
+        <span style="width:1px;height:20px;background:#475569;display:inline-block"></span>
+        <button class="ftbtn danger" onclick="exitPresenter()">Exit</button>
+      </div>
     </div>
 
     <!-- Status bar -->
@@ -271,8 +337,12 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
       <div class="bac-fraction" id="bac-fraction">—</div>
       <div class="bac-bar-wrap"><div class="bac-bar" id="bac-bar" style="width:0%;background:#e5e7eb"></div></div>
       <div id="bac-list"></div>
-      <div class="sb-title" style="margin-top:14px">Case Checklist</div>
+      <div class="sb-tabs" style="margin-top:14px">
+        <button class="sb-tab active" id="tab-checklist" onclick="setSidebarTab('checklist')">Checklist</button>
+        <button class="sb-tab" id="tab-outline" onclick="setSidebarTab('outline')">Outline</button>
+      </div>
       <div id="chk-list"></div>
+      <div id="outline-list" style="display:none"></div>
     </div>
   </div>
 </div>
@@ -303,6 +373,10 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
     <textarea id="ed-text" rows="3" oninput="updateEdTip()"></textarea>
   </div>
   <div class="ed-warn" id="ed-warn" style="display:none"></div>
+  <div class="ed-row" id="ed-note-row" style="display:none">
+    <label>Reviewer Note</label>
+    <textarea id="ed-note" rows="2"></textarea>
+  </div>
   <div class="ed-btns">
     <button id="ed-save" onclick="saveEditor()">Save</button>
     <button id="ed-cancel" onclick="closeEditor()">Cancel</button>
@@ -310,6 +384,9 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
 </div>
 
 <div id="toast"></div>
+
+<!-- Context menu -->
+<div id="context-menu"></div>
 
 <!-- Help -->
 <div id="help-backdrop" onclick="toggleHelp()"></div>
@@ -323,24 +400,47 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
     <h3>Getting Started</h3>
     <ul>
       <li><strong>Double-click the canvas</strong> to add a Claim node at that position.</li>
-      <li><strong>Click a node type</strong> in the left palette to add it at the canvas center, then fill in its text.</li>
+      <li><strong>Click a node type</strong> in the left palette to add it at the canvas center, then fill in its text — or <strong>drag a palette button</strong> onto the canvas to drop it at an exact spot.</li>
       <li><strong>Double-click any node</strong> to edit its label and text in a popup, or edit directly in the <em>Properties</em> sidebar on the right.</li>
+      <li><strong>Right-click a node</strong> for a quick menu: Duplicate, Copy, Select Subtree, change type, or Delete. Right-click empty canvas to add a Claim there or paste the clipboard.</li>
     </ul>
 
     <h3>Connecting Nodes</h3>
     <ul>
       <li><strong>Hover a node</strong> to reveal small ○ handles at its four edges. <strong>Drag from a handle</strong> to another node to draw an arrow.</li>
       <li>Alternatively, activate <strong>→ Connect</strong> mode in the left panel, then <strong>click the source node</strong>, then <strong>click the target node</strong>.</li>
-      <li>To remove a connection, activate <strong>✕ Delete</strong> mode and click the arrow line.</li>
+      <li>To remove a connection, activate <strong>✕ Delete</strong> mode and click the arrow line, or right-click the line and choose <strong>Delete Connection</strong>.</li>
+      <li><strong>Hover or select a Claim, Defeater, or Inference Rule</strong> to reveal a small <strong>+</strong> button to its right — click it to add a new connected sub-claim below it and open the editor immediately. (Change its type from the editor's Type dropdown if you meant Evidence or a defeater instead.)</li>
+    </ul>
+
+    <h3>Selecting Multiple Nodes</h3>
+    <ul>
+      <li><strong>Shift-click</strong> a node to add or remove it from the current selection.</li>
+      <li><strong>Shift-drag</strong> on empty canvas to draw a marquee box — every node it touches is added to the selection. (Plain drag on empty canvas still pans, as usual.)</li>
+      <li>Drag any node that's part of a multi-selection to move the whole group together.</li>
+      <li><strong>Arrow keys</strong> nudge the current selection by a few pixels; hold <span class="kbd">Shift</span> for a bigger step.</li>
+      <li><strong>Delete</strong>/<span class="kbd">Backspace</span> removes every selected node (and their connections) at once.</li>
+    </ul>
+
+    <h3>Duplicate, Copy &amp; Paste</h3>
+    <ul>
+      <li><span class="kbd">Ctrl D</span> / <span class="kbd">⌘ D</span> — duplicates the current selection (nodes + the connections between them) just below/right of the original.</li>
+      <li><span class="kbd">Ctrl C</span> / <span class="kbd">⌘ C</span> then <span class="kbd">Ctrl V</span> / <span class="kbd">⌘ V</span> — copies the selection to an in-memory clipboard; paste repeatedly to stamp down more copies, each offset a little further. Right-click empty canvas and choose <strong>Paste</strong> to drop the clipboard at that exact spot instead.</li>
+      <li>Right-click a node and choose <strong>Select Subtree</strong> to select it and everything connected below it — handy before copying or duplicating a whole branch.</li>
     </ul>
 
     <h3>Navigating the Canvas</h3>
     <ul>
-      <li><strong>Drag empty canvas</strong> to pan in any direction.</li>
+      <li><strong>Drag empty canvas</strong> to pan in any direction. On a touchscreen, drag with one finger to pan/select and <strong>pinch with two fingers</strong> to zoom.</li>
       <li><strong>Scroll</strong> to zoom in and out (zooms toward the cursor).</li>
-      <li><strong>Fit</strong> button (bottom bar) — fits all nodes into the visible area.</li>
+      <li><strong>Fit</strong> button (bottom bar) — fits all <em>visible</em> nodes into view (collapsed branches are ignored).</li>
       <li><strong>Auto Layout</strong> — arranges nodes as a top-down tree: Claims → Sub-claims → Defeaters → Evidence. Context and Justification nodes are placed to the right of their parent.</li>
+      <li><strong>Find in diagram</strong> (top-right of the toolbar) — type to highlight every node whose label or text matches; press <span class="kbd">Enter</span> to jump to the next match (<span class="kbd">Shift Enter</span> for the previous), <span class="kbd">Escape</span> to clear.</li>
     </ul>
+
+    <h3>Outline View &amp; Collapsing Branches</h3>
+    <p>The sidebar's <strong>Outline</strong> tab (next to Checklist) lists every node as a nested, clickable tree — useful for jumping around a large case without panning. Clicking a row (or a node in the Checklist) automatically re-expands any collapsed ancestor so the target is visible.</p>
+    <p>On the canvas, any node with outgoing connections shows a small <strong>−</strong>/<strong>+</strong> toggle below it (in the same spot the undeveloped-branch diamond would otherwise occupy). Click it to collapse or expand everything below that node — handy for decluttering a big diagram while you work on one branch. Collapse state is just a view preference; it isn't saved to the <code>.gsn.json</code> file or the exported SVG.</p>
 
     <h3>Node Types</h3>
     <table>
@@ -383,16 +483,34 @@ textarea.sb-input{resize:vertical;min-height:70px;line-height:1.4}
     <p>When you add or edit a node — in the popup editor or the right-hand Properties panel — you'll see a short <strong>writing tip</strong> for that node type with a good example, plus a live warning if your text looks off.</p>
     <div class="note">These are heuristic nudges based on simple pattern-matching, not hard rules or NLP — they will miss real issues and occasionally flag fine text. Use your judgment as the case author; nothing is blocked from saving.</div>
 
+    <h3>Review Mode (Reviewer Notes)</h3>
+    <p>Toggle <strong>Review Mode</strong> in the toolbar to reveal a <em>Reviewer Note</em> field — separate from the student's own claim/evidence text — in both the popup editor and the Properties sidebar. This is meant for instructor or peer-review feedback on a specific node without editing the node's actual content.</p>
+    <p>Any node with a note shows a small amber <strong>!</strong> badge in its top-right corner at all times, even with Review Mode off, so reviewer comments are easy to spot while browsing a case.</p>
+
+    <h3>Presenter Mode</h3>
+    <p>Click <strong>▶ Present</strong> (bottom floating toolbar) to step through the case top-down, one node at a time, in the same order as the Outline view. The current node is highlighted with a purple ring and everything else dims; a caption bar at the top shows its label and text.</p>
+    <ul>
+      <li><span class="kbd">→</span> / <span class="kbd">Space</span> — next node &nbsp;·&nbsp; <span class="kbd">←</span> — previous node &nbsp;·&nbsp; <span class="kbd">Escape</span> — exit</li>
+      <li>Editing, dragging, and right-click are disabled while presenting so nothing shifts mid-walkthrough; manual zoom/scroll still works.</li>
+      <li>Exiting restores whatever pan/zoom you had before you started presenting.</li>
+    </ul>
+
     <h3>Keyboard Shortcuts</h3>
     <table>
       <tr><th>Key</th><th>Action</th></tr>
       <tr><td><span class="kbd">Ctrl Z</span></td><td>Undo</td></tr>
       <tr><td><span class="kbd">Ctrl Y</span> / <span class="kbd">Ctrl ⇧ Z</span></td><td>Redo</td></tr>
-      <tr><td><span class="kbd">Delete</span> / <span class="kbd">Backspace</span></td><td>Delete selected node or edge</td></tr>
+      <tr><td><span class="kbd">Ctrl D</span></td><td>Duplicate selection</td></tr>
+      <tr><td><span class="kbd">Ctrl C</span> / <span class="kbd">Ctrl V</span></td><td>Copy / paste selection</td></tr>
+      <tr><td><span class="kbd">Shift</span> + click</td><td>Add/remove a node from the selection</td></tr>
+      <tr><td><span class="kbd">Shift</span> + drag (empty canvas)</td><td>Marquee-select all nodes inside the box</td></tr>
+      <tr><td>Arrow keys</td><td>Nudge the selection (hold <span class="kbd">Shift</span> for a bigger step)</td></tr>
+      <tr><td><span class="kbd">Delete</span> / <span class="kbd">Backspace</span></td><td>Delete selected node(s) or edge</td></tr>
       <tr><td><span class="kbd">Ctrl S</span></td><td>Save to Disc (downloads file)</td></tr>
-      <tr><td><span class="kbd">Escape</span></td><td>Cancel current operation / close editor</td></tr>
+      <tr><td><span class="kbd">Escape</span></td><td>Cancel current operation / close editor / exit Presenter</td></tr>
       <tr><td><span class="kbd">Scroll</span></td><td>Zoom in / out toward cursor</td></tr>
       <tr><td><span class="kbd">Space + drag</span></td><td>Pan canvas (alternative to dragging empty space)</td></tr>
+      <tr><td><span class="kbd">Enter</span> / <span class="kbd">Shift Enter</span></td><td>Next / previous match while the Find box is focused</td></tr>
     </table>
 
     <h3>Save &amp; Load</h3>
@@ -463,7 +581,12 @@ let state = {
   edges: [],
   camera: { x: 60, y: 60, zoom: 1 },
   mode: 'select',
+  reviewMode: false,
   sel: { nodeId: null, edgeId: null },
+  multi: new Set(),
+  collapsed: new Set(),
+  searchMatchIds: new Set(),
+  marquee: { on: false, x0: 0, y0: 0, x1: 0, y1: 0 },
   drag: { on: false, id: null, sx: 0, sy: 0, nx: 0, ny: 0 },
   conn: { on: false, from: null, mx: 0, my: 0 },
   pan:    { on: false, sx: 0, sy: 0, cx: 0, cy: 0 },
@@ -522,8 +645,10 @@ function nodeById(id){ return state.nodes.find(n => n.id === id); }
 function edgeById(id){ return state.edges.find(e => e.id === id); }
 function nodeAt(cx, cy){
   // iterate in reverse so top-rendered nodes are hit first
+  const hidden = hiddenByCollapse();
   for(let i = state.nodes.length-1; i >= 0; i--){
     const n = state.nodes[i];
+    if(hidden.has(n.id)) continue;
     if(hitTest(n, cx, cy)) return n;
   }
   return null;
@@ -662,6 +787,49 @@ function leafDecorator(n){
 }
 
 // ═══════════════════════════════════════════════
+// COLLAPSE / EXPAND SUBTREE (session-only view state)
+// ═══════════════════════════════════════════════
+// Occupies the same south slot as leafDecorator — the two are mutually exclusive
+// since this only renders when the node DOES have outgoing edges.
+function collapseToggleSVG(n){
+  const hasChildren = state.edges.some(e => e.from === n.id);
+  if(!hasChildren) return '';
+  const hh = n.h/2;
+  const collapsed = state.collapsed.has(n.id);
+  const cy = hh + 14;
+  return `<g class="collapse-toggle" data-ct="${n.id}">
+    <circle cx="0" cy="${cy}" r="9" fill="#fff" stroke="#64748b" stroke-width="1.3"/>
+    <text x="0" y="${cy+3.5}" text-anchor="middle" font-size="11" font-weight="700" fill="#475569" font-family="system-ui,sans-serif">${collapsed?'+':'−'}</text>
+  </g>`;
+}
+
+function collapseToggleAt(cx, cy){
+  const hidden = hiddenByCollapse();
+  for(let i = state.nodes.length-1; i >= 0; i--){
+    const n = state.nodes[i];
+    if(hidden.has(n.id) || !state.edges.some(e => e.from === n.id)) continue;
+    const p = { x:n.x, y:n.y + n.h/2 + 14 };
+    if(Math.hypot(cx-p.x, cy-p.y) <= 10) return n;
+  }
+  return null;
+}
+
+// Returns the set of node ids hidden because an ancestor is collapsed.
+function hiddenByCollapse(){
+  const hidden = new Set();
+  function hideDescendants(id){
+    state.edges.forEach(e => {
+      if(e.from === id && !hidden.has(e.to)){
+        hidden.add(e.to);
+        hideDescendants(e.to);
+      }
+    });
+  }
+  state.collapsed.forEach(id => hideDescendants(id));
+  return hidden;
+}
+
+// ═══════════════════════════════════════════════
 // CONNECTION HANDLES
 // ═══════════════════════════════════════════════
 function getHandlePositions(n){
@@ -676,13 +844,65 @@ function handleSVG(n){
 }
 
 function handleAt(cx, cy){
+  const hidden = hiddenByCollapse();
   for(let i = state.nodes.length-1; i >= 0; i--){
     const n = state.nodes[i];
+    if(hidden.has(n.id)) continue;
     for(const h of getHandlePositions(n)){
       if(Math.hypot(cx-(n.x+h.x), cy-(n.y+h.y)) <= 9) return n;
     }
   }
   return null;
+}
+
+// ═══════════════════════════════════════════════
+// QUICK-ADD ("+") — one-click connected child node
+// ═══════════════════════════════════════════════
+// Only node types that typically grow a downward argument get the affordance;
+// Evidence/Context/Justification are leaves in this tool's mental model.
+const QUICK_ADD_TYPES = new Set(['claim','rebutting','undermining','undercutting','inference']);
+
+function quickAddPos(n){
+  return { x: n.x + n.w/2 + 20, y: n.y };
+}
+
+function quickAddAt(cx, cy){
+  const hidden = hiddenByCollapse();
+  for(let i = state.nodes.length-1; i >= 0; i--){
+    const n = state.nodes[i];
+    if(hidden.has(n.id) || !QUICK_ADD_TYPES.has(n.type)) continue;
+    const p = quickAddPos(n);
+    if(Math.hypot(cx-p.x, cy-p.y) <= 11) return n;
+  }
+  return null;
+}
+
+function quickAddSVG(n){
+  if(!QUICK_ADD_TYPES.has(n.type)) return '';
+  const qx = n.w/2 + 20;
+  return `<g class="quick-add" data-qa="${n.id}">
+    <circle cx="${qx}" cy="0" r="10" fill="#fff" stroke="#0ea5e9" stroke-width="1.5"/>
+    <line x1="${qx-5}" y1="0" x2="${qx+5}" y2="0" stroke="#0ea5e9" stroke-width="2"/>
+    <line x1="${qx}" y1="-5" x2="${qx}" y2="5" stroke="#0ea5e9" stroke-width="2"/>
+  </g>`;
+}
+
+// Creates a new sub-claim already connected below the given parent, then opens its editor.
+// "claim" is the most generally useful default — the editor's type dropdown is one click away
+// if the user meant evidence or a defeater instead.
+function quickAddChild(parentId){
+  const parent = nodeById(parentId);
+  if(!parent) return;
+  const t = TYPE.claim;
+  const n = { id:uid(), type:'claim', label:nextLabel('claim'), text:'', note:'',
+              x: parent.x, y: parent.y + parent.h/2 + 140, w:t.w, h:t.h };
+  state.nodes.push(n);
+  state.edges.push({ id:uid(), from:parentId, to:n.id });
+  state.sel = { nodeId:n.id, edgeId:null };
+  state.multi.clear();
+  pushHistory();
+  render();
+  openEditor(n);
 }
 
 // ═══════════════════════════════════════════════
@@ -717,7 +937,7 @@ function resizeHandleAt(px, py){
 // NODE RENDER
 // ═══════════════════════════════════════════════
 function nodeHTML(n){
-  const selected = state.sel.nodeId === n.id;
+  const selected = state.sel.nodeId === n.id || state.multi.has(n.id);
   const t = TYPE[n.type];
   const fs = 12, lfs = 10;
   const hw = n.w/2, hh = n.h/2;
@@ -731,14 +951,32 @@ function nodeHTML(n){
   const lx = t.shape==='circle'||t.shape==='ellipse' ? -hw*0.6 : -hw+6;
   const ly = t.shape==='circle'||t.shape==='ellipse' ? -hh*0.6 : -hh+12;
   const labelHTML = `<text x="${lx}" y="${ly}" font-size="${lfs}" font-weight="700" fill="${selected?'#0ea5e9':t.stroke}" font-family="system-ui,sans-serif">${esc(n.label)}</text>`;
+  const matchHTML = state.searchMatchIds.has(n.id)
+    ? `<rect x="${-hw-6}" y="${-hh-6}" width="${n.w+12}" height="${n.h+12}" rx="8" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="5,3"/>`
+    : '';
+  const nbx = t.shape==='circle'||t.shape==='ellipse' ? hw*0.6 : hw-10;
+  const nby = t.shape==='circle'||t.shape==='ellipse' ? -hh*0.6 : -hh+10;
+  const noteHTML = (n.note||'').trim()
+    ? `<g transform="translate(${nbx},${nby})" title="Has a reviewer note"><circle r="7" fill="#fbbf24" stroke="#fff" stroke-width="1.3"/><text y="3" text-anchor="middle" font-size="9" font-weight="700" fill="#78350f" font-family="system-ui,sans-serif">!</text></g>`
+    : '';
+  const isPresenting = presenter.on && presenter.order[presenter.index] === n.id;
+  const presenterDim = presenter.on && !isPresenting;
+  const spotlightHTML = isPresenting
+    ? `<rect x="${-hw-9}" y="${-hh-9}" width="${n.w+18}" height="${n.h+18}" rx="10" fill="none" stroke="#7c3aed" stroke-width="3"/>`
+    : '';
 
-  return `<g transform="translate(${n.x},${n.y})" data-id="${n.id}" class="gnode">
+  return `<g transform="translate(${n.x},${n.y})" data-id="${n.id}" class="gnode${selected?' qa-selected':''}${presenterDim?' gnode-dim':''}">
+    ${spotlightHTML}
+    ${matchHTML}
     ${shapeHTML(n, selected)}
+    ${noteHTML}
     ${labelHTML}
     ${textHTML}
     ${leafDecorator(n)}
+    ${collapseToggleSVG(n)}
     ${handleSVG(n)}
     ${resizeHandleSVG(n)}
+    ${quickAddSVG(n)}
     <rect x="${-hw-4}" y="${-hh-4}" width="${n.w+8}" height="${n.h+8}" fill="transparent" class="hitbox"/>
   </g>`;
 }
@@ -774,8 +1012,11 @@ function edgeHTML(e){
 function renderCanvas(){
   world.setAttribute('transform',
     `translate(${state.camera.x},${state.camera.y}) scale(${state.camera.zoom})`);
-  document.getElementById('edges-layer').innerHTML = state.edges.map(edgeHTML).join('');
-  document.getElementById('nodes-layer').innerHTML = state.nodes.map(nodeHTML).join('');
+  const hidden = hiddenByCollapse();
+  document.getElementById('edges-layer').innerHTML =
+    state.edges.filter(e => !hidden.has(e.from) && !hidden.has(e.to)).map(edgeHTML).join('');
+  document.getElementById('nodes-layer').innerHTML =
+    state.nodes.filter(n => !hidden.has(n.id)).map(nodeHTML).join('');
   updateStatus();
 }
 
@@ -805,13 +1046,17 @@ function updateSidebar(){
       <div class="sb-row"><label>Text</label>
         <textarea class="sb-input" rows="4" oninput="updateNodeProp('text',this.value)">${esc(n.text)}</textarea>
       </div>
-      <div class="sb-warn" id="sb-warn" style="display:none"></div>`;
+      <div class="sb-warn" id="sb-warn" style="display:none"></div>
+      ${state.reviewMode ? `<div class="sb-row"><label>Reviewer Note</label>
+        <textarea class="sb-input" rows="3" oninput="updateNodeProp('note',this.value)">${esc(n.note||'')}</textarea>
+      </div>` : ''}`;
   } else {
     pc.innerHTML = '<p class="sb-placeholder">Select a node to edit</p>';
   }
   updateSidebarWarning();
   updateBaconian();
   updateChecklist();
+  updateOutline();
 }
 
 function updateSidebarWarning(){
@@ -916,13 +1161,315 @@ function updateChecklist(){
   ).join('');
 }
 
+// ═══════════════════════════════════════════════
+// OUTLINE / TREE VIEW (sidebar)
+// ═══════════════════════════════════════════════
+let sidebarTab = 'checklist';
+const OUTLINE_ORDER = { claim:0, inference:1, rebutting:2, undermining:2, undercutting:2, evidence:3, context:4, justification:4 };
+
+function setSidebarTab(tab){
+  sidebarTab = tab;
+  const tc = document.getElementById('tab-checklist'), to = document.getElementById('tab-outline');
+  if(tc) tc.classList.toggle('active', tab==='checklist');
+  if(to) to.classList.toggle('active', tab==='outline');
+  const chk = document.getElementById('chk-list'), otl = document.getElementById('outline-list');
+  if(chk) chk.style.display = tab==='checklist' ? '' : 'none';
+  if(otl) otl.style.display = tab==='outline' ? '' : 'none';
+}
+
+function buildOutlineTree(){
+  const childrenOf = {};
+  state.nodes.forEach(n => { childrenOf[n.id] = []; });
+  state.edges.forEach(e => { if(childrenOf[e.from]) childrenOf[e.from].push(e.to); });
+  state.nodes.forEach(n => {
+    childrenOf[n.id].sort((a,b) =>
+      (OUTLINE_ORDER[nodeById(a)?.type] ?? 9) - (OUTLINE_ORDER[nodeById(b)?.type] ?? 9));
+  });
+  const hasIncoming = new Set(state.edges.map(e => e.to));
+  const roots = state.nodes.filter(n => !hasIncoming.has(n.id));
+  return { childrenOf, roots: roots.length ? roots : state.nodes.slice(0,1) };
+}
+
+function outlineRowHTML(n, childrenOf, depth, visited){
+  if(visited.has(n.id)) return '';
+  visited.add(n.id);
+  const kids = childrenOf[n.id].map(id => nodeById(id)).filter(Boolean);
+  const hasKids = kids.length > 0;
+  const collapsed = state.collapsed.has(n.id);
+  const toggle = hasKids
+    ? `<span class="otl-toggle" onclick="event.stopPropagation();toggleCollapse('${n.id}')">${collapsed?'&#9656;':'&#9662;'}</span>`
+    : `<span class="otl-toggle"></span>`;
+  const t = TYPE[n.type];
+  const preview = n.text ? esc(n.text.slice(0,28)) + (n.text.length>28?'…':'') : '(empty)';
+  let html = `<div class="otl-row" style="padding-left:${depth*13}px" onclick="focusNode('${n.id}')">${toggle}<span class="otl-prefix" style="color:${t.stroke}">${esc(n.label)}</span><span class="otl-text">${preview}</span></div>`;
+  if(hasKids && !collapsed){
+    html += kids.map(k => outlineRowHTML(k, childrenOf, depth+1, visited)).join('');
+  }
+  return html;
+}
+
+function updateOutline(){
+  const list = document.getElementById('outline-list');
+  if(!list) return;
+  if(!state.nodes.length){
+    list.innerHTML = '<p class="sb-placeholder" style="font-size:10px">Add nodes to see the outline</p>';
+    return;
+  }
+  const { childrenOf, roots } = buildOutlineTree();
+  const visited = new Set();
+  list.innerHTML = roots.map(r => outlineRowHTML(r, childrenOf, 0, visited)).join('');
+}
+
+function toggleCollapse(id){
+  if(state.collapsed.has(id)) state.collapsed.delete(id);
+  else state.collapsed.add(id);
+  render();
+}
+
+// ═══════════════════════════════════════════════
+// WALKTHROUGH / PRESENTER MODE
+// ═══════════════════════════════════════════════
+// Pre-order DFS over the same tree the outline view shows — top-down argument order.
+function flattenOutlineOrder(){
+  const { childrenOf, roots } = buildOutlineTree();
+  const order = [];
+  const visited = new Set();
+  function visit(id){
+    if(visited.has(id)) return;
+    visited.add(id);
+    order.push(id);
+    childrenOf[id].forEach(visit);
+  }
+  roots.forEach(r => visit(r.id));
+  return order;
+}
+
+function startPresenter(){
+  if(!state.nodes.length){ toast('Nothing to present'); return; }
+  presenter.order = flattenOutlineOrder();
+  presenter.index = 0;
+  presenter.savedCamera = { ...state.camera };
+  presenter.on = true;
+  document.getElementById('canvas-wrap').classList.add('presenting');
+  document.getElementById('presenter-bar').style.display = 'flex';
+  presenterGoTo(0);
+}
+
+function exitPresenter(){
+  presenter.on = false;
+  document.getElementById('canvas-wrap').classList.remove('presenting');
+  document.getElementById('presenter-bar').style.display = 'none';
+  if(presenter.savedCamera) state.camera = presenter.savedCamera;
+  render();
+}
+
+function presenterGoTo(index){
+  if(!presenter.order.length) return;
+  presenter.index = Math.max(0, Math.min(index, presenter.order.length-1));
+  const id = presenter.order[presenter.index];
+  const n = nodeById(id);
+  if(n){
+    expandAncestors(id);
+    const r = cvs.getBoundingClientRect();
+    state.camera.zoom = 1;
+    state.camera.x = r.width/2 - n.x*state.camera.zoom;
+    state.camera.y = r.height/2 - n.y*state.camera.zoom;
+  }
+  updatePresenterBar();
+  render();
+}
+
+function presenterNext(){ presenterGoTo(presenter.index + 1); }
+function presenterPrev(){ presenterGoTo(presenter.index - 1); }
+
+function updatePresenterBar(){
+  const n = nodeById(presenter.order[presenter.index]);
+  const cap = document.getElementById('presenter-caption');
+  if(cap && n) cap.innerHTML = `<b>${esc(n.label)}</b> &mdash; ${esc(n.text) || '<em>(no text yet)</em>'}`;
+  const prog = document.getElementById('presenter-progress');
+  if(prog) prog.textContent = `${presenter.index+1} / ${presenter.order.length}`;
+  const prevBtn = document.getElementById('presenter-prev');
+  const nextBtn = document.getElementById('presenter-next');
+  if(prevBtn) prevBtn.disabled = presenter.index === 0;
+  if(nextBtn) nextBtn.disabled = presenter.index === presenter.order.length - 1;
+}
+
+// Expands every collapsed ancestor of id so it's actually visible after a jump.
+function expandAncestors(id){
+  let frontier = [id];
+  const guard = new Set();
+  while(frontier.length){
+    const next = [];
+    frontier.forEach(nid => {
+      state.edges.forEach(e => {
+        if(e.to === nid && !guard.has(e.from)){
+          guard.add(e.from);
+          state.collapsed.delete(e.from);
+          next.push(e.from);
+        }
+      });
+    });
+    frontier = next;
+  }
+}
+
 function focusNode(id){
   const n = nodeById(id); if(!n) return;
+  expandAncestors(id);
   state.sel = { nodeId:id, edgeId:null };
+  state.multi.clear();
   const r = cvs.getBoundingClientRect();
   state.camera.x = r.width/2 - n.x*state.camera.zoom;
   state.camera.y = r.height/2 - n.y*state.camera.zoom;
   render();
+}
+
+// ═══════════════════════════════════════════════
+// FIND IN DIAGRAM
+// ═══════════════════════════════════════════════
+function onSearchInput(){
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  if(!q){
+    state.searchMatchIds.clear();
+    searchOrder = []; searchIndex = -1;
+    updateSearchCount();
+    renderCanvas();
+    return;
+  }
+  searchOrder = state.nodes.filter(n => (n.label+' '+n.text).toLowerCase().includes(q)).map(n => n.id);
+  state.searchMatchIds = new Set(searchOrder);
+  searchIndex = searchOrder.length ? 0 : -1;
+  updateSearchCount();
+  if(searchIndex >= 0) focusNode(searchOrder[searchIndex]);
+  else renderCanvas();
+}
+
+function onSearchKeydown(e){
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    if(!searchOrder.length) return;
+    searchIndex = e.shiftKey
+      ? (searchIndex - 1 + searchOrder.length) % searchOrder.length
+      : (searchIndex + 1) % searchOrder.length;
+    focusNode(searchOrder[searchIndex]);
+    updateSearchCount();
+  } else if(e.key === 'Escape'){
+    e.target.value = '';
+    onSearchInput();
+    e.target.blur();
+  }
+}
+
+function updateSearchCount(){
+  const el = document.getElementById('search-count');
+  if(!el) return;
+  const hasQuery = document.getElementById('search-input').value.trim().length > 0;
+  el.textContent = searchOrder.length ? `${searchIndex+1}/${searchOrder.length}` : (hasQuery ? '0/0' : '');
+}
+
+// ═══════════════════════════════════════════════
+// MULTI-SELECT
+// ═══════════════════════════════════════════════
+function selectedIds(){
+  const s = new Set(state.multi);
+  if(state.sel.nodeId) s.add(state.sel.nodeId);
+  return s;
+}
+
+function toggleMultiSelect(id){
+  if(state.sel.nodeId === id){
+    state.sel.nodeId = null;
+    if(state.multi.size){
+      const next = state.multi.values().next().value;
+      state.multi.delete(next);
+      state.sel.nodeId = next;
+    }
+  } else if(state.multi.has(id)){
+    state.multi.delete(id);
+  } else if(state.sel.nodeId){
+    state.multi.add(id);
+  } else {
+    state.sel.nodeId = id;
+  }
+}
+
+function clearSelection(){
+  state.sel = { nodeId:null, edgeId:null };
+  state.multi.clear();
+}
+
+function renderMarqueeBox(){
+  const { x0, y0, x1, y1 } = state.marquee;
+  const x = Math.min(x0,x1), y = Math.min(y0,y1), w = Math.abs(x1-x0), h = Math.abs(y1-y0);
+  document.getElementById('wire-layer').innerHTML =
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(14,165,233,.12)" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+}
+
+function finishMarquee(){
+  const { x0, y0, x1, y1 } = state.marquee;
+  const minX = Math.min(x0,x1), maxX = Math.max(x0,x1), minY = Math.min(y0,y1), maxY = Math.max(y0,y1);
+  state.nodes.forEach(n => {
+    const overlaps = n.x+n.w/2 >= minX && n.x-n.w/2 <= maxX && n.y+n.h/2 >= minY && n.y-n.h/2 <= maxY;
+    if(overlaps) state.multi.add(n.id);
+  });
+  if(!state.sel.nodeId && state.multi.size){
+    const first = state.multi.values().next().value;
+    state.multi.delete(first);
+    state.sel.nodeId = first;
+  }
+  state.marquee.on = false;
+  document.getElementById('wire-layer').innerHTML = '';
+}
+
+// ═══════════════════════════════════════════════
+// DUPLICATE / CLIPBOARD
+// ═══════════════════════════════════════════════
+function cloneSelectionData(ids){
+  const idSet = ids instanceof Set ? ids : new Set(ids);
+  const nodes = state.nodes.filter(n => idSet.has(n.id)).map(n => ({...n}));
+  const edges = state.edges.filter(e => idSet.has(e.from) && idSet.has(e.to)).map(e => ({...e}));
+  return { nodes, edges };
+}
+
+function pasteClone(data, dx, dy){
+  if(!data || !data.nodes.length) return [];
+  const idMap = {};
+  const newNodes = data.nodes.map(n => {
+    const nid = uid();
+    idMap[n.id] = nid;
+    return { ...n, id:nid, label: nextLabel(n.type), x:n.x+dx, y:n.y+dy };
+  });
+  const newEdges = data.edges.map(e => ({ id:uid(), from:idMap[e.from], to:idMap[e.to] }));
+  state.nodes.push(...newNodes);
+  state.edges.push(...newEdges);
+  state.multi = new Set(newNodes.map(n => n.id));
+  const first = newNodes[0].id;
+  state.multi.delete(first);
+  state.sel = { nodeId:first, edgeId:null };
+  pushHistory(); render();
+  return newNodes;
+}
+
+function duplicateSelection(){
+  const ids = selectedIds();
+  if(!ids.size){ toast('Nothing selected to duplicate'); return; }
+  pasteClone(cloneSelectionData(ids), 30, 30);
+  toast('Duplicated');
+}
+
+function copySelection(){
+  const ids = selectedIds();
+  if(!ids.size){ toast('Nothing selected to copy'); return; }
+  clipboard = cloneSelectionData(ids);
+  clipboardPasteOffset = 0;
+  toast(`Copied ${clipboard.nodes.length} node${clipboard.nodes.length===1?'':'s'}`);
+}
+
+function pasteClipboard(){
+  if(!clipboard || !clipboard.nodes.length){ toast('Clipboard is empty'); return; }
+  clipboardPasteOffset += 30;
+  pasteClone(clipboard, clipboardPasteOffset, clipboardPasteOffset);
+  toast('Pasted');
 }
 
 // ═══════════════════════════════════════════════
@@ -942,6 +1489,17 @@ function setMode(m){
 }
 
 // ═══════════════════════════════════════════════
+// REVIEW MODE (instructor notes)
+// ═══════════════════════════════════════════════
+function toggleReviewMode(){
+  state.reviewMode = !state.reviewMode;
+  document.getElementById('review-toggle').classList.toggle('active', state.reviewMode);
+  const row = document.getElementById('ed-note-row');
+  if(row) row.style.display = state.reviewMode ? 'block' : 'none';
+  render();
+}
+
+// ═══════════════════════════════════════════════
 // ADD NODE
 // ═══════════════════════════════════════════════
 function addNode(type, cx, cy){
@@ -952,9 +1510,10 @@ function addNode(type, cx, cy){
     cy = c.y + (Math.random()-0.5)*60;
   }
   const t = TYPE[type];
-  const n = { id: uid(), type, label: nextLabel(type), text: '', x: cx, y: cy, w: t.w, h: t.h };
+  const n = { id: uid(), type, label: nextLabel(type), text: '', note: '', x: cx, y: cy, w: t.w, h: t.h };
   state.nodes.push(n);
   state.sel = { nodeId: n.id, edgeId: null };
+  state.multi.clear();
   pushHistory();
   render();
   openEditor(n);
@@ -967,6 +1526,16 @@ function deleteNode(id){
   state.nodes = state.nodes.filter(n => n.id !== id);
   state.edges = state.edges.filter(e => e.from !== id && e.to !== id);
   if(state.sel.nodeId === id) state.sel.nodeId = null;
+  state.multi.delete(id);
+  pushHistory(); render();
+}
+
+function deleteNodes(ids){
+  const idSet = new Set(ids);
+  state.nodes = state.nodes.filter(n => !idSet.has(n.id));
+  state.edges = state.edges.filter(e => !idSet.has(e.from) && !idSet.has(e.to));
+  if(idSet.has(state.sel.nodeId)) state.sel.nodeId = null;
+  state.multi.clear();
   pushHistory(); render();
 }
 
@@ -980,6 +1549,12 @@ function deleteEdge(id){
 // EDITOR OVERLAY
 // ═══════════════════════════════════════════════
 let editingNodeId = null;
+let nudgeTimer = null;
+let clipboard = null;
+let clipboardPasteOffset = 0;
+let searchOrder = [];
+let searchIndex = -1;
+let presenter = { on:false, order:[], index:0 };
 
 function updateEdTip(){
   const type = document.getElementById('ed-type').value;
@@ -1000,6 +1575,8 @@ function openEditor(n){
   document.getElementById('ed-type').value = n.type;
   document.getElementById('ed-label').value = n.label;
   document.getElementById('ed-text').value = n.text;
+  document.getElementById('ed-note').value = n.note || '';
+  document.getElementById('ed-note-row').style.display = state.reviewMode ? 'block' : 'none';
   updateEdTip();
   // Position near node
   const sp = c2s(n.x, n.y);
@@ -1018,6 +1595,11 @@ function openEditor(n){
 function closeEditor(){
   document.getElementById('node-editor').style.display = 'none';
   editingNodeId = null;
+  // Hiding the editor doesn't blur its inputs — without this, document.activeElement
+  // stays on the now-invisible textarea and blocks keyboard shortcuts (Ctrl+D/C/V, arrows).
+  if(document.activeElement && document.getElementById('node-editor').contains(document.activeElement)){
+    document.activeElement.blur();
+  }
 }
 
 function saveEditor(){
@@ -1026,6 +1608,7 @@ function saveEditor(){
   const newType = document.getElementById('ed-type').value;
   n.label = document.getElementById('ed-label').value.trim() || n.label;
   n.text  = document.getElementById('ed-text').value;
+  n.note  = document.getElementById('ed-note').value;
   if(newType !== n.type){
     n.type = newType;
     n.w = TYPE[newType].w; n.h = TYPE[newType].h;
@@ -1038,7 +1621,9 @@ function saveEditor(){
 // EDGE HIT DETECTION (approximate via bbox near midpoint)
 // ═══════════════════════════════════════════════
 function edgeAt(cx, cy){
+  const hidden = hiddenByCollapse();
   for(const e of state.edges){
+    if(hidden.has(e.from) || hidden.has(e.to)) continue;
     const from = nodeById(e.from), to = nodeById(e.to);
     if(!from||!to) continue;
     const p1 = connPt(from, to.x, to.y);
@@ -1065,6 +1650,214 @@ cvs.addEventListener('dblclick', onDbl);
 cvs.addEventListener('wheel', onWheel, { passive: false });
 window.addEventListener('keydown', onKey);
 window.addEventListener('keyup', e => { if(e.code==='Space') state.spaceDown=false; });
+cvs.addEventListener('dragover', onCanvasDragOver);
+cvs.addEventListener('drop', onCanvasDrop);
+
+// ═══════════════════════════════════════════════
+// TOUCH (single-touch pan/drag/select via the mouse handlers, two-finger pinch-zoom)
+// ═══════════════════════════════════════════════
+let pinch = null;
+
+function touchDist(t0, t1){ return Math.hypot(t1.clientX-t0.clientX, t1.clientY-t0.clientY); }
+function touchMid(t0, t1){ return { x:(t0.clientX+t1.clientX)/2, y:(t0.clientY+t1.clientY)/2 }; }
+
+function onTouchStart(e){
+  if(e.touches.length === 2){
+    e.preventDefault();
+    state.pan.on = false; state.drag.on = false; state.conn.on = false;
+    state.resize.on = false; state.marquee.on = false;
+    pinch = {
+      startDist: touchDist(e.touches[0], e.touches[1]),
+      startZoom: state.camera.zoom,
+      startCamera: { x:state.camera.x, y:state.camera.y },
+      startMid: touchMid(e.touches[0], e.touches[1])
+    };
+    return;
+  }
+  if(e.touches.length === 1){
+    e.preventDefault();
+    const t = e.touches[0];
+    onDown({ button:0, clientX:t.clientX, clientY:t.clientY, shiftKey:false, preventDefault(){} });
+  }
+}
+
+function onTouchMove(e){
+  if(pinch && e.touches.length === 2){
+    e.preventDefault();
+    const dist = touchDist(e.touches[0], e.touches[1]);
+    const mid = touchMid(e.touches[0], e.touches[1]);
+    const newZoom = Math.max(0.1, Math.min(4, pinch.startZoom * (dist / pinch.startDist)));
+    const r = cvs.getBoundingClientRect();
+    const anchorX = pinch.startMid.x - r.left, anchorY = pinch.startMid.y - r.top;
+    const cx0 = (anchorX - pinch.startCamera.x) / pinch.startZoom;
+    const cy0 = (anchorY - pinch.startCamera.y) / pinch.startZoom;
+    state.camera.zoom = newZoom;
+    state.camera.x = (mid.x - r.left) - cx0*newZoom;
+    state.camera.y = (mid.y - r.top) - cy0*newZoom;
+    render();
+    return;
+  }
+  if(e.touches.length === 1 && !pinch){
+    e.preventDefault();
+    const t = e.touches[0];
+    onMove({ clientX:t.clientX, clientY:t.clientY });
+  }
+}
+
+function onTouchEnd(e){
+  if(pinch){
+    if(e.touches.length < 2) pinch = null;
+    return;
+  }
+  const t = e.changedTouches[0];
+  if(t) onUp({ clientX:t.clientX, clientY:t.clientY });
+}
+
+cvs.addEventListener('touchstart', onTouchStart, { passive:false });
+cvs.addEventListener('touchmove', onTouchMove, { passive:false });
+cvs.addEventListener('touchend', onTouchEnd);
+cvs.addEventListener('touchcancel', onTouchEnd);
+
+// ═══════════════════════════════════════════════
+// PALETTE DRAG-AND-DROP
+// ═══════════════════════════════════════════════
+function onPaletteDragStart(e, type){
+  e.dataTransfer.setData('text/plain', type);
+  e.dataTransfer.effectAllowed = 'copy';
+}
+function onCanvasDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+}
+function onCanvasDrop(e){
+  e.preventDefault();
+  if(presenter.on) return;
+  const type = e.dataTransfer.getData('text/plain');
+  if(!TYPE[type]) return;
+  const pt = s2c(e.clientX, e.clientY);
+  addNode(type, pt.x, pt.y);
+}
+
+// ═══════════════════════════════════════════════
+// CONTEXT MENU (right-click)
+// ═══════════════════════════════════════════════
+cvs.addEventListener('contextmenu', onContextMenu);
+window.addEventListener('mousedown', e => {
+  const m = document.getElementById('context-menu');
+  if(m.style.display === 'block' && !m.contains(e.target)) hideContextMenu();
+});
+
+function showContextMenu(x, y, html){
+  const m = document.getElementById('context-menu');
+  m.innerHTML = html;
+  m.style.display = 'block';
+  const mw = m.offsetWidth, mh = m.offsetHeight;
+  m.style.left = Math.min(x, window.innerWidth - mw - 8) + 'px';
+  m.style.top = Math.min(y, window.innerHeight - mh - 8) + 'px';
+}
+function hideContextMenu(){
+  document.getElementById('context-menu').style.display = 'none';
+}
+
+function onContextMenu(e){
+  e.preventDefault();
+  if(presenter.on) return;
+  const pt = s2c(e.clientX, e.clientY);
+  const hitNode = nodeAt(pt.x, pt.y);
+  if(hitNode){
+    if(!selectedIds().has(hitNode.id)){
+      state.multi.clear();
+      state.sel = { nodeId:hitNode.id, edgeId:null };
+      render();
+    }
+    showNodeContextMenu(e.clientX, e.clientY, hitNode);
+    return;
+  }
+  const hitEdge = edgeAt(pt.x, pt.y);
+  if(hitEdge){
+    state.multi.clear();
+    state.sel = { nodeId:null, edgeId:hitEdge.id };
+    render();
+    showEdgeContextMenu(e.clientX, e.clientY, hitEdge);
+    return;
+  }
+  showCanvasContextMenu(e.clientX, e.clientY, pt);
+}
+
+function showNodeContextMenu(x, y, node){
+  const count = selectedIds().size;
+  const tag = count > 1 ? ` (${count})` : '';
+  const typeOptions = Object.keys(TYPE).map(k =>
+    `<div class="cm-item" onclick="changeSelectedType('${k}');hideContextMenu()">${k}${k===node.type?' &#10003;':''}</div>`
+  ).join('');
+  showContextMenu(x, y, `
+    <div class="cm-item" onclick="duplicateSelection();hideContextMenu()">Duplicate${tag}</div>
+    <div class="cm-item" onclick="copySelection();hideContextMenu()">Copy${tag}</div>
+    <div class="cm-item" onclick="selectSubtree('${node.id}');hideContextMenu()">Select Subtree</div>
+    <div class="cm-sep"></div>
+    <div class="cm-label">Change type</div>
+    ${typeOptions}
+    <div class="cm-sep"></div>
+    <div class="cm-item danger" onclick="contextDelete();hideContextMenu()">Delete${tag}</div>
+  `);
+}
+
+function showEdgeContextMenu(x, y, edge){
+  showContextMenu(x, y, `
+    <div class="cm-item danger" onclick="deleteEdge('${edge.id}');hideContextMenu()">Delete Connection</div>
+  `);
+}
+
+function showCanvasContextMenu(x, y, pt){
+  const hasClip = clipboard && clipboard.nodes.length > 0;
+  showContextMenu(x, y, `
+    <div class="cm-item" onclick="addNode('claim',${pt.x},${pt.y});hideContextMenu()">Add Claim Here</div>
+    <div class="cm-item${hasClip?'':' disabled'}" ${hasClip?`onclick="pasteClipboardAt(${pt.x},${pt.y});hideContextMenu()"`:''}>Paste${hasClip?` (${clipboard.nodes.length})`:''}</div>
+  `);
+}
+
+function changeSelectedType(type){
+  const ids = selectedIds();
+  ids.forEach(id => {
+    const n = nodeById(id);
+    if(n){ n.type = type; n.w = TYPE[type].w; n.h = TYPE[type].h; }
+  });
+  pushHistory(); render();
+}
+
+function contextDelete(){
+  const ids = selectedIds();
+  if(ids.size > 1) deleteNodes([...ids]);
+  else if(state.sel.nodeId) deleteNode(state.sel.nodeId);
+}
+
+function selectSubtree(rootId){
+  const visited = new Set([rootId]);
+  let frontier = [rootId];
+  while(frontier.length){
+    const next = [];
+    frontier.forEach(id => {
+      state.edges.forEach(e => {
+        if(e.from === id && !visited.has(e.to)){ visited.add(e.to); next.push(e.to); }
+      });
+    });
+    frontier = next;
+  }
+  visited.delete(rootId);
+  state.multi = visited;
+  state.sel = { nodeId:rootId, edgeId:null };
+  render();
+  toast(`Selected ${visited.size+1} node${visited.size?'s':''}`);
+}
+
+function pasteClipboardAt(cx, cy){
+  if(!clipboard || !clipboard.nodes.length){ toast('Clipboard is empty'); return; }
+  const xs = clipboard.nodes.map(n => n.x), ys = clipboard.nodes.map(n => n.y);
+  const centroidX = (Math.min(...xs)+Math.max(...xs))/2;
+  const centroidY = (Math.min(...ys)+Math.max(...ys))/2;
+  pasteClone(clipboard, cx-centroidX, cy-centroidY);
+  toast('Pasted');
+}
 
 function getTarget(e){
   let el = e.target;
@@ -1077,6 +1870,7 @@ function getTarget(e){
 }
 
 function onDown(e){
+  if(presenter.on) return;
   if(e.button === 1 || (e.button === 0 && state.spaceDown)){
     e.preventDefault();
     state.pan = { on:true, sx:e.clientX, sy:e.clientY, cx:state.camera.x, cy:state.camera.y };
@@ -1108,6 +1902,10 @@ function onDown(e){
       state.resize = { on:true, id:n.id, corner, ax, ay };
       return;
     }
+    const ct = collapseToggleAt(pt.x, pt.y);
+    if(ct){ toggleCollapse(ct.id); return; }
+    const qa = quickAddAt(pt.x, pt.y);
+    if(qa){ quickAddChild(qa.id); return; }
   }
 
   // Check connection handles (always available outside delete mode)
@@ -1138,12 +1936,29 @@ function onDown(e){
   }
 
   if(hit){
-    state.sel = { nodeId:hit.id, edgeId:null };
-    state.drag = { on:true, id:hit.id, sx:pt.x, sy:pt.y, nx:hit.x, ny:hit.y };
+    if(e.shiftKey){
+      toggleMultiSelect(hit.id);
+      render();
+      return;
+    }
+    const ids = selectedIds();
+    if(ids.size > 1 && ids.has(hit.id)){
+      // Group drag: move every selected node together
+      state.drag = { on:true, group:true, sx:pt.x, sy:pt.y,
+        starts:[...ids].map(id => { const nn = nodeById(id); return { id, x:nn.x, y:nn.y }; }) };
+    } else {
+      state.multi.clear();
+      state.sel = { nodeId:hit.id, edgeId:null };
+      state.drag = { on:true, id:hit.id, sx:pt.x, sy:pt.y, nx:hit.x, ny:hit.y };
+    }
   } else {
     const he = edgeAt(pt.x, pt.y);
     if(he){
+      state.multi.clear();
       state.sel = { nodeId:null, edgeId:he.id };
+    } else if(e.shiftKey){
+      // Shift-drag on empty canvas → marquee select
+      state.marquee = { on:true, x0:pt.x, y0:pt.y, x1:pt.x, y1:pt.y };
     } else {
       // Drag on empty canvas → pan. Short release without moving → deselect.
       state.pan = { on:true, sx:e.clientX, sy:e.clientY, cx:state.camera.x, cy:state.camera.y, click:true };
@@ -1153,6 +1968,12 @@ function onDown(e){
 }
 
 function onMove(e){
+  if(state.marquee.on){
+    const pt = s2c(e.clientX, e.clientY);
+    state.marquee.x1 = pt.x; state.marquee.y1 = pt.y;
+    renderMarqueeBox();
+    return;
+  }
   if(state.resize.on){
     const pt = s2c(e.clientX, e.clientY);
     const n = nodeById(state.resize.id);
@@ -1177,6 +1998,15 @@ function onMove(e){
   }
   if(state.drag.on){
     const pt = s2c(e.clientX, e.clientY);
+    if(state.drag.group){
+      const dx = pt.x - state.drag.sx, dy = pt.y - state.drag.sy;
+      state.drag.starts.forEach(st => {
+        const n = nodeById(st.id);
+        if(n){ n.x = st.x + dx; n.y = st.y + dy; }
+      });
+      render();
+      return;
+    }
     const n = nodeById(state.drag.id);
     if(n){
       n.x = state.drag.nx + pt.x - state.drag.sx;
@@ -1198,12 +2028,17 @@ function onMove(e){
 }
 
 function onUp(e){
+  if(state.marquee.on){
+    finishMarquee();
+    render();
+    return;
+  }
   if(state.pan.on){
     const moved = Math.hypot(e.clientX - state.pan.sx, e.clientY - state.pan.sy) >= 4;
     state.pan.on = false;
     if(state.pan.click && !moved){
       // Short click on empty canvas → deselect
-      state.sel = { nodeId:null, edgeId:null };
+      clearSelection();
       closeEditor();
       render();
     }
@@ -1225,7 +2060,7 @@ function onUp(e){
 }
 
 function onDbl(e){
-  if(e.button !== 0) return;
+  if(e.button !== 0 || presenter.on) return;
   const pt = s2c(e.clientX, e.clientY);
   const hit = nodeAt(pt.x, pt.y);
   if(hit){ openEditor(hit); return; }
@@ -1246,21 +2081,51 @@ function onWheel(e){
 }
 
 function onKey(e){
+  if(presenter.on){
+    const inField = ['INPUT','TEXTAREA'].includes(document.activeElement.tagName);
+    if(!inField){
+      if(e.key==='ArrowRight' || e.key===' '){ e.preventDefault(); presenterNext(); }
+      else if(e.key==='ArrowLeft'){ e.preventDefault(); presenterPrev(); }
+      else if(e.key==='Escape'){ e.preventDefault(); exitPresenter(); }
+    }
+    return; // swallow editing shortcuts while presenting
+  }
   if(e.code==='Space' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){
     e.preventDefault(); state.spaceDown = true;
   }
   if((e.key==='Delete'||e.key==='Backspace') && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){
-    if(state.sel.nodeId) deleteNode(state.sel.nodeId);
+    const ids = selectedIds();
+    if(ids.size > 1) deleteNodes([...ids]);
+    else if(state.sel.nodeId) deleteNode(state.sel.nodeId);
     else if(state.sel.edgeId) deleteEdge(state.sel.edgeId);
   }
   if(e.key==='Escape'){
     const bd = document.getElementById('help-backdrop');
     if(bd && bd.style.display==='block'){ toggleHelp(); return; }
+    hideContextMenu();
     closeEditor(); setMode('select');
+    clearSelection(); render();
   }
   if((e.ctrlKey||e.metaKey) && e.key==='s'){ e.preventDefault(); saveToDisc(); }
   if((e.ctrlKey||e.metaKey) && e.key==='z' && !e.shiftKey){ e.preventDefault(); undo(); }
   if((e.ctrlKey||e.metaKey) && (e.key==='y' || (e.key==='z' && e.shiftKey))){ e.preventDefault(); redo(); }
+  const inTextField = ['INPUT','TEXTAREA'].includes(document.activeElement.tagName);
+  if((e.ctrlKey||e.metaKey) && e.key==='d' && !inTextField){ e.preventDefault(); duplicateSelection(); }
+  if((e.ctrlKey||e.metaKey) && e.key==='c' && !inTextField){ e.preventDefault(); copySelection(); }
+  if((e.ctrlKey||e.metaKey) && e.key==='v' && !inTextField){ e.preventDefault(); pasteClipboard(); }
+  if(e.key.startsWith('Arrow') && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){
+    const ids = selectedIds();
+    if(ids.size){
+      e.preventDefault();
+      const step = e.shiftKey ? 20 : 4;
+      const dx = e.key==='ArrowLeft' ? -step : e.key==='ArrowRight' ? step : 0;
+      const dy = e.key==='ArrowUp' ? -step : e.key==='ArrowDown' ? step : 0;
+      ids.forEach(id => { const n = nodeById(id); if(n){ n.x += dx; n.y += dy; } });
+      render();
+      clearTimeout(nudgeTimer);
+      nudgeTimer = setTimeout(pushHistory, 400);
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -1278,8 +2143,11 @@ function zoom(factor){
 
 function fitView(){
   if(state.nodes.length === 0) return;
-  const xs = state.nodes.map(n=>n.x), ys = state.nodes.map(n=>n.y);
-  const ws = state.nodes.map(n=>n.w/2), hs = state.nodes.map(n=>n.h/2);
+  const hidden = hiddenByCollapse();
+  const visible = state.nodes.filter(n => !hidden.has(n.id));
+  if(!visible.length) return;
+  const xs = visible.map(n=>n.x), ys = visible.map(n=>n.y);
+  const ws = visible.map(n=>n.w/2), hs = visible.map(n=>n.h/2);
   const minX = Math.min(...xs.map((x,i)=>x-ws[i]));
   const maxX = Math.max(...xs.map((x,i)=>x+ws[i]));
   const minY = Math.min(...ys.map((y,i)=>y-hs[i]));
@@ -1401,7 +2269,7 @@ function undo(){
   histIdx--;
   const s = JSON.parse(history[histIdx]);
   state.nodes = s.nodes; state.edges = s.edges;
-  state.sel = { nodeId:null, edgeId:null };
+  clearSelection();
   recalcCounters(); render(); toast('Undone');
 }
 
@@ -1410,7 +2278,7 @@ function redo(){
   histIdx++;
   const s = JSON.parse(history[histIdx]);
   state.nodes = s.nodes; state.edges = s.edges;
-  state.sel = { nodeId:null, edgeId:null };
+  clearSelection();
   recalcCounters(); render(); toast('Redone');
 }
 
@@ -1479,11 +2347,13 @@ function saveSVG(){
   const vx = minX-pad, vy = minY-pad, vw = maxX-minX+pad*2, vh = maxY-minY+pad*2;
 
   // Render without selection highlight
-  const savedSel = state.sel;
+  const savedSel = state.sel, savedMulti = state.multi;
   state.sel = { nodeId:null, edgeId:null };
+  state.multi = new Set();
   const edgesStr = state.edges.map(edgeHTML).join('');
   const nodesStr = state.nodes.map(nodeHTML).join('');
   state.sel = savedSel;
+  state.multi = savedMulti;
 
   const svgOut = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="${vw}" height="${vh}">
@@ -1517,7 +2387,8 @@ function loadData(data){
   state.nodes = data.nodes || [];
   state.edges = data.edges || [];
   state.camera = data.camera || { x:60, y:60, zoom:1 };
-  state.sel = { nodeId:null, edgeId:null };
+  clearSelection();
+  state.collapsed.clear();
   document.getElementById('case-name-input').value = data.name || 'Untitled';
   recalcCounters();
   history = []; histIdx = -1; pushHistory();
@@ -1531,7 +2402,8 @@ function newCase(){
   if(state.nodes.length && !confirm('Start a new case? Unsaved work will be lost.')) return;
   state.nodes=[]; state.edges=[];
   state.camera={x:80,y:80,zoom:1};
-  state.sel={nodeId:null,edgeId:null};
+  clearSelection();
+  state.collapsed.clear();
   state.counters={};
   history=[]; histIdx=-1;
   document.getElementById('case-name-input').value='Untitled Case';
